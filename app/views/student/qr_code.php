@@ -1,4 +1,4 @@
-<?php require_once ROOT_PATH . '/app/helpers/qr_helper.php'; ?>
+
 
 <div class="page-header">
     <div>
