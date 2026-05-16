@@ -1,0 +1,3 @@
+# Storage Directory
+This directory contains generated files (QR codes, reports, logs).
+Do not commit user-generated content to version control.
