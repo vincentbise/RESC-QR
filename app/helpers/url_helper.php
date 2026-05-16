@@ -15,5 +15,5 @@ function currentUrl() {
 function isActive($path) {
     $current = trim(parse_url(currentUrl(), PHP_URL_PATH), '/');
     $check = trim('RESC-QR/' . ltrim($path, '/'), '/');
-    return strpos($current, $check) !== false ? 'active' : '';
+    return $current === $check ? 'active' : '';
 }
