@@ -1,6 +1,3 @@
-const BASE_URL = document.querySelector('meta[name="csrf-token"]')?.closest('html')?.querySelector('link[rel="stylesheet"][href*="RESC-QR"]')?.href?.match(/.*RESC-QR/)?.[0] || '/RESC-QR';
-const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
-
 const App = {
     async ajax(url, options = {}) {
         const defaults = {
@@ -104,13 +101,20 @@ const App = {
 
     debounce(fn, delay = 300) {
         let timer;
-        return (...args) => {
+        return function(...args) {
             clearTimeout(timer);
-            timer = setTimeout(() => fn(...args), delay);
+            timer = setTimeout(() => fn.apply(this, args), delay);
         };
     },
 
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    },
+
     formatDate(dateStr) {
+        if (!dateStr) return '';
         return new Date(dateStr).toLocaleString('en-PH', {
             month: 'short', day: 'numeric', year: 'numeric',
             hour: '2-digit', minute: '2-digit'

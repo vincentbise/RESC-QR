@@ -35,11 +35,13 @@ class Student extends Model {
 
     public function create($data) {
         $qrCode = 'RESC-STU-' . str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT) . '-' . time();
+        $defaultPassword = password_hash('Student@123', PASSWORD_BCRYPT, ['cost' => 12]);
         return $this->insert('student', [
             'class_id'       => $data['class_id'],
             'first_name'     => $data['first_name'],
             'last_name'      => $data['last_name'],
             'email'          => $data['email'] ?? null,
+            'password_hash'  => $defaultPassword,
             'phone'          => $data['phone'] ?? null,
             'course'         => $data['course'],
             'year_level'     => $data['year_level'],

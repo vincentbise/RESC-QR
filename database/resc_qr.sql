@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS `student` (
     `first_name` VARCHAR(100) NOT NULL,
     `last_name` VARCHAR(100) NOT NULL,
     `email` VARCHAR(150) DEFAULT NULL,
+    `password_hash` VARCHAR(255) DEFAULT NULL,
     `phone` VARCHAR(20) DEFAULT NULL,
     `course` VARCHAR(100) NOT NULL,
     `year_level` VARCHAR(20) NOT NULL,
