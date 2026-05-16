@@ -10,14 +10,14 @@ define('PUBLIC_URL', BASE_URL . '/public');
 
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_strict_mode', 1);
-ini_set('session.cookie_samesite', 'Strict');
+ini_set('session.cookie_samesite', 'Lax');
 session_set_cookie_params([
     'lifetime' => 3600,
     'path'     => '/',
     'domain'   => '',
     'secure'   => false,
     'httponly'  => true,
-    'samesite'  => 'Strict'
+    'samesite'  => 'Lax'
 ]);
 session_start();
 
