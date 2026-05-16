@@ -3,7 +3,7 @@ USE `resc_qr`;
 
 -- Admin account (password: Admin@123)
 INSERT INTO `admin` (`name`, `email`, `password_hash`, `role`) VALUES
-('System Administrator', 'admin@usep.edu.ph', '$2y$12$ukma1BJNZxv53Ja2ISTjnu6W0mo0ZithOCBe8NLtX.Ij6jIpYyqMS', 'admin');
+('System Administrator', 'admin@usep.edu.ph', '$2y$12$ajF25pDdjMN2XyHvCMgDNepE6VjRNA4Kt2Xy0yhr7IwVY1yY2maAa', 'admin');
 
 -- Classes / Sections
 INSERT INTO `class` (`section_name`, `program`, `year_level`) VALUES
@@ -13,11 +13,11 @@ INSERT INTO `class` (`section_name`, `program`, `year_level`) VALUES
 ('BSCS 1A', 'BS Computer Science', '1st Year'),
 ('BSCS 2A', 'BS Computer Science', '2nd Year');
 
--- Class Mayors (password: Mayor@123)
+-- Class Mayors (password: Admin@123)
 INSERT INTO `class_mayor` (`class_id`, `name`, `email`, `password_hash`, `phone`) VALUES
-(1, 'Maria Santos', 'maria.santos@usep.edu.ph', '$2y$12$ukma1BJNZxv53Ja2ISTjnu6W0mo0ZithOCBe8NLtX.Ij6jIpYyqMS', '09171234567'),
-(2, 'Juan Dela Cruz', 'juan.delacruz@usep.edu.ph', '$2y$12$ukma1BJNZxv53Ja2ISTjnu6W0mo0ZithOCBe8NLtX.Ij6jIpYyqMS', '09181234567'),
-(3, 'Ana Reyes', 'ana.reyes@usep.edu.ph', '$2y$12$ukma1BJNZxv53Ja2ISTjnu6W0mo0ZithOCBe8NLtX.Ij6jIpYyqMS', '09191234567');
+(1, 'Maria Santos', 'maria.santos@usep.edu.ph', '$2y$12$ajF25pDdjMN2XyHvCMgDNepE6VjRNA4Kt2Xy0yhr7IwVY1yY2maAa', '09171234567'),
+(2, 'Juan Dela Cruz', 'juan.delacruz@usep.edu.ph', '$2y$12$ajF25pDdjMN2XyHvCMgDNepE6VjRNA4Kt2Xy0yhr7IwVY1yY2maAa', '09181234567'),
+(3, 'Ana Reyes', 'ana.reyes@usep.edu.ph', '$2y$12$ajF25pDdjMN2XyHvCMgDNepE6VjRNA4Kt2Xy0yhr7IwVY1yY2maAa', '09191234567');
 
 -- Students (password: Student@123)
 INSERT INTO `student` (`class_id`, `first_name`, `last_name`, `email`, `password_hash`, `phone`, `course`, `year_level`, `qr_code_value`, `profile_status`) VALUES

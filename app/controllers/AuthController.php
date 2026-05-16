@@ -140,7 +140,7 @@ class AuthController extends Controller {
         $db = Database::getInstance()->getConnection();
         $stmt = $db->prepare(
             "SELECT COUNT(*) as attempts FROM login_attempts
-             WHERE ip_address = :ip AND attempt_time > DATE_SUB(NOW(), INTERVAL 15 MINUTE)"
+             WHERE ip_address = :ip AND attempt_time > DATE_SUB(NOW(), INTERVAL 30 SECOND)"
         );
         $stmt->execute([':ip' => $ip]);
         $result = $stmt->fetch();
