@@ -8,14 +8,14 @@ class ReportController extends Controller {
 
     public function index() {
         $reportModel = $this->model('IncidentReport');
-        $reports = $reportModel->getAll();
+        $eventModel  = $this->model('EmergencyEvent');
+        $reports     = $reportModel->getAll();
 
         if ($this->isAjax()) {
             $this->json(['success' => true, 'reports' => $reports]);
             return;
         }
 
-        $eventModel = $this->model('EmergencyEvent');
         $data = [
             'pageTitle' => 'Reports',
             'reports'   => $reports,
@@ -27,28 +27,42 @@ class ReportController extends Controller {
     }
 
     public function generate() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('/report'); return; }
-
-        $eventId = InputValidator::validateId($_POST['event_id'] ?? '');
-        $summary = InputValidator::sanitizeString($_POST['summary'] ?? '');
-
-        if (!$eventId) {
-            if ($this->isAjax()) { $this->json(['success' => false, 'message' => 'Invalid event.'], 400); return; }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/report');
             return;
         }
 
-        $reportModel = $this->model('IncidentReport');
-        $id = $reportModel->generate($eventId, getUserId(), $summary ?: 'Auto-generated incident report');
+        // Read JSON body sent by App.post()
+        $input   = $this->getJsonInput();
+        $eventId = InputValidator::validateId($input['event_id'] ?? '');
+        $summary = InputValidator::sanitizeString($input['summary'] ?? '');
 
-        if ($this->isAjax()) {
-            $report = $reportModel->findReport($id);
-            $this->json(['success' => true, 'message' => 'Report generated successfully.', 'report' => $report]);
+        if (!$eventId) {
+            $this->json(['success' => false, 'message' => 'Please select a valid event.'], 400);
             return;
         }
 
-        $this->setFlash('success', 'Report generated.');
-        $this->redirect('/report');
+        try {
+            $reportModel = $this->model('IncidentReport');
+            $id = $reportModel->generate($eventId, getUserId(), $summary ?: 'Auto-generated incident report.');
+
+            if (!$id) {
+                $this->json(['success' => false, 'message' => 'Insert failed — no ID returned.'], 500);
+                return;
+            }
+
+            $report = $reportModel->findReport($id);
+            $this->json([
+                'success' => true,
+                'message' => 'Report generated successfully.',
+                'report'  => $report,
+            ]);
+
+        } catch (PDOException $e) {
+            $this->json(['success' => false, 'message' => 'Database error: ' . $e->getMessage()], 500);
+        } catch (Exception $e) {
+            $this->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
 
     public function scanlogs() {

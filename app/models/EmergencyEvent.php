@@ -35,7 +35,6 @@ class EmergencyEvent extends Model {
     }
 
     public function close($id) {
-        $this->initializeStatuses($id);
         return $this->update('emergency_event', ['status' => 'Closed'], 'event_id', $id);
     }
 

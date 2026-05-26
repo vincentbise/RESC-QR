@@ -12,6 +12,14 @@ class StudentStatus extends Model {
         return $stmt;
     }
 
+    public function getStudentStatus($studentId, $eventId) {
+        $stmt = $this->query(
+            "SELECT * FROM student_status WHERE student_id = :sid AND event_id = :eid LIMIT 1",
+            [':sid' => $studentId, ':eid' => $eventId]
+        );
+        return $stmt->fetch();
+    }
+
     public function getStatusesByEvent($eventId) {
         $stmt = $this->query(
             "SELECT ss.*, s.first_name, s.last_name, s.phone, s.email, s.qr_code_value,

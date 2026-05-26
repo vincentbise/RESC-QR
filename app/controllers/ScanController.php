@@ -55,6 +55,23 @@ class ScanController extends Controller {
             return;
         }
 
+        // Block duplicate scans — already Safe
+        $currentStatus = $this->statusModel->getStudentStatus($student['student_id'], $activeEvent['event_id']);
+        if ($currentStatus && $currentStatus['status'] === 'Safe') {
+            $this->json([
+                'success'     => false,
+                'already_safe' => true,
+                'message'     => $student['first_name'] . ' ' . $student['last_name'] . ' is already marked as SAFE.',
+                'scan_result' => 'Duplicate',
+                'student'     => [
+                    'id'      => $student['student_id'],
+                    'name'    => $student['first_name'] . ' ' . $student['last_name'],
+                    'section' => $student['section_name'],
+                ]
+            ]);
+            return;
+        }
+
         $this->scanLogModel->logScan($student['student_id'], $activeEvent['event_id'], getUserId(), 'Valid');
         $this->statusModel->setStatus($student['student_id'], $activeEvent['event_id'], 'Safe');
 

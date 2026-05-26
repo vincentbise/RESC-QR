@@ -19,7 +19,7 @@
                 <thead>
                     <tr>
                         <th>Type</th>
-                        <th>Date & Time</th>
+                        <th>Date &amp; Time</th>
                         <th>Description</th>
                         <th>Created By</th>
                         <th>Safe</th>
@@ -28,12 +28,12 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="eventsBody">
+                <tbody>
                     <?php if (empty($events)): ?>
                         <tr><td colspan="8" class="text-center text-muted" style="padding:60px;">No emergency events recorded</td></tr>
                     <?php else: ?>
                         <?php foreach ($events as $ev): ?>
-                        <tr id="event-row-<?= $ev['event_id'] ?>">
+                        <tr>
                             <td>
                                 <div class="d-flex align-center gap-1">
                                     <div class="stat-icon" style="width:32px;height:32px;font-size:14px;background:rgba(239,68,68,0.12);color:var(--accent-danger);border-radius:8px;display:flex;align-items:center;justify-content:center;">
@@ -56,9 +56,12 @@
                             </td>
                             <td>
                                 <?php if ($ev['status'] === 'Active'): ?>
-                                    <button class="btn btn-warning btn-sm" onclick="closeEvent(<?= $ev['event_id'] ?>)">
-                                        <i class="fas fa-times-circle"></i> Close
-                                    </button>
+                                    <form method="POST" action="<?= baseUrl('event/close/' . $ev['event_id']) ?>" style="display:inline;" onsubmit="return confirm('Close this event? This will finalize all student statuses.');">
+                                        <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+                                        <button type="submit" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-times-circle"></i> Close
+                                        </button>
+                                    </form>
                                 <?php else: ?>
                                     <span class="text-muted">—</span>
                                 <?php endif; ?>
@@ -72,15 +75,16 @@
     </div>
 </div>
 
+<!-- Declare Emergency Modal -->
 <div class="modal-overlay" id="createEventModal">
     <div class="modal">
         <div class="modal-header">
             <h3><i class="fas fa-exclamation-triangle text-danger"></i> Declare Emergency Event</h3>
-            <button class="modal-close" onclick="App.modal.close('createEventModal')">&times;</button>
+            <button type="button" class="modal-close" onclick="App.modal.close('createEventModal')">&times;</button>
         </div>
-        <div class="modal-body">
-            <form id="createEventForm">
-                <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+        <form method="POST" action="<?= baseUrl('event/store') ?>">
+            <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+            <div class="modal-body">
                 <div class="form-group">
                     <label for="event_type">Emergency Type</label>
                     <select class="form-control" name="event_type" id="event_type" required>
@@ -99,63 +103,17 @@
                     <i class="fas fa-info-circle"></i>
                     <span>Creating an event will mark <strong>all active students</strong> as "Missing" until scanned.</span>
                 </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="App.modal.close('createEventModal')">Cancel</button>
-            <button class="btn btn-danger" id="declareBtn" onclick="createEvent()">
-                <i class="fas fa-exclamation-triangle"></i> Declare Emergency
-            </button>
-        </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="App.modal.close('createEventModal')">Cancel</button>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Declare Emergency
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <style>
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
 </style>
-
-<script>
-async function createEvent() {
-    const btn = document.getElementById('declareBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creating...';
-
-    const formData = new FormData(document.getElementById('createEventForm'));
-
-    try {
-        const data = await App.ajax('/event/store', { method: 'POST', body: formData });
-        if (data.success) {
-            App.toast(data.message, 'success');
-            App.modal.close('createEventModal');
-            setTimeout(() => location.reload(), 800);
-        } else {
-            App.toast(data.message || 'Failed to create event.', 'error');
-        }
-    } catch (e) {
-        App.toast('An error occurred.', 'error');
-    }
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Declare Emergency';
-}
-
-async function closeEvent(id) {
-    const confirmed = await App.confirm('Are you sure you want to close this event? This will finalize all student statuses.');
-    if (!confirmed) return;
-
-    try {
-        const data = await App.ajax('/event/close/' + id, { method: 'POST', body: new FormData() });
-        if (data.success) {
-            App.toast(data.message, 'success');
-            const row = document.getElementById('event-row-' + id);
-            if (row) {
-                row.querySelector('.badge-danger')?.remove();
-                const statusCell = row.cells[6];
-                statusCell.innerHTML = '<span class="badge badge-primary">Closed</span>';
-                row.cells[7].innerHTML = '<span class="text-muted">—</span>';
-            }
-        }
-    } catch (e) {
-        App.toast('Failed to close event.', 'error');
-    }
-}
-</script>

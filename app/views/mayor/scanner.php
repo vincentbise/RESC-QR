@@ -5,66 +5,105 @@
 </div>
 <?php endif; ?>
 
-<div class="page-header">
-    <div>
-        <h1><i class="fas fa-camera"></i> QR Scanner</h1>
-        <p>Scan student QR codes to mark them as Safe</p>
-    </div>
-    <?php if ($activeEvent): ?>
-        <span class="badge badge-danger" style="font-size:14px;padding:8px 16px;animation:pulse 2s infinite;">
-            ● <?= e($activeEvent['event_type']) ?> ACTIVE
-        </span>
-    <?php endif; ?>
-</div>
+<?php if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'on' || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] !== 'https')): ?>
+<?php /* Only show on iOS — handled by JS below */ ?>
+<?php endif; ?>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-    <div class="card">
-        <div class="card-header">
-            <h3><i class="fas fa-camera"></i> Camera Scanner</h3>
-            <button class="btn btn-sm btn-primary" id="startScanBtn" onclick="startScanner()">
-                <i class="fas fa-play"></i> Start
-            </button>
+<!-- jsQR loaded early so it is ready before startScanner() is called -->
+<script src="<?= publicUrl('js/jsqr.min.js') ?>"></script>
+
+<div class="scanner-page">
+    <div class="scanner-top-bar">
+        <div class="scanner-top-bar__left">
+            <h1><i class="fas fa-camera"></i> QR Scanner</h1>
+            <p class="scanner-subtitle">Scan student QR codes to mark Safe</p>
         </div>
-        <div class="card-body" style="text-align:center;">
-            <div id="qr-reader" style="width:100%;max-width:400px;margin:0 auto;border-radius:12px;overflow:hidden;"></div>
-            <div id="scannerPlaceholder" style="padding:60px 20px;color:var(--text-muted);">
-                <i class="fas fa-camera" style="font-size:48px;opacity:0.3;margin-bottom:16px;display:block;"></i>
-                <p>Click "Start" to activate camera</p>
-            </div>
+        <?php if ($activeEvent): ?>
+            <span class="event-badge-live">
+                <span class="event-badge-live__dot"></span>
+                <?= e($activeEvent['event_type']) ?> ACTIVE
+            </span>
+        <?php endif; ?>
+    </div>
 
-            <div style="margin-top:20px;">
-                <div class="form-group" style="text-align:left;">
-                    <label>Or enter QR code manually:</label>
-                    <div class="d-flex gap-1">
-                        <input type="text" class="form-control" id="manualQR" placeholder="RESC-STU-XXXXX">
-                        <button class="btn btn-primary" onclick="manualScan()">
-                            <i class="fas fa-search"></i> Scan
-                        </button>
+    <!-- iOS HTTPS notice -->
+    <div id="httpsNotice" class="alert alert-warning" style="display:none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span><strong>Camera requires HTTPS on iOS.</strong> Open this page over HTTPS for the camera to work. Use manual entry below as a fallback.</span>
+    </div>
+
+    <!-- Camera Scanner -->
+    <div class="scanner-hero">
+        <div class="scanner-hero__card card">
+            <div class="scanner-hero__viewfinder">
+                <div id="qr-reader"></div>
+                <div id="scannerPlaceholder" class="scanner-hero__placeholder">
+                    <div class="scanner-hero__placeholder-inner">
+                        <div class="scanner-hero__corners">
+                            <span class="corner corner--tl"></span>
+                            <span class="corner corner--tr"></span>
+                            <span class="corner corner--bl"></span>
+                            <span class="corner corner--br"></span>
+                        </div>
+                        <i class="fas fa-qrcode"></i>
+                        <p>Tap the button below to activate the camera</p>
                     </div>
                 </div>
             </div>
+            <div class="scanner-hero__controls">
+                <button class="btn-scan-toggle" id="startScanBtn" onclick="startScanner()">
+                    <i class="fas fa-play"></i>
+                    <span>Start Scanning</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <div>
-        <div class="card" style="margin-bottom:20px;">
-            <div class="card-header">
+    <!-- Scan Result -->
+    <div class="scan-result-panel" id="scanResultPanel">
+        <div class="card">
+            <div class="card-header scan-result-panel__header">
                 <h3><i class="fas fa-check-circle text-success"></i> Last Scan Result</h3>
             </div>
             <div class="card-body" id="scanResult">
-                <div class="empty-state" style="padding:40px;">
-                    <i class="fas fa-qrcode" style="font-size:36px;"></i>
-                    <p>Waiting for scan...</p>
+                <div class="empty-state scan-result-panel__empty">
+                    <i class="fas fa-qrcode"></i>
+                    <p>Waiting for scan&hellip;</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Input & History -->
+    <div class="scanner-secondary">
+        <div class="card scanner-manual">
+            <div class="card-header">
+                <h3><i class="fas fa-keyboard"></i> Manual Entry</h3>
+            </div>
+            <div class="card-body">
+                <div class="scanner-manual__row">
+                    <input type="text" class="form-control" id="manualQR"
+                           placeholder="RESC-STU-XXXXX"
+                           aria-label="Manual QR code input"
+                           autocomplete="off"
+                           autocorrect="off"
+                           autocapitalize="characters">
+                    <button class="btn btn-primary" onclick="manualScan()">
+                        <i class="fas fa-search"></i> Scan
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
+        <div class="card scanner-history">
+            <div class="card-header scanner-history__header" id="historyToggle" role="button" tabindex="0" aria-expanded="true">
                 <h3><i class="fas fa-list"></i> Scan History</h3>
-                <span class="badge badge-info" id="historyCount">0 scans</span>
+                <div class="scanner-history__meta">
+                    <span class="badge badge-info" id="historyCount">0 scans</span>
+                    <i class="fas fa-chevron-down scanner-history__chevron"></i>
+                </div>
             </div>
-            <div class="card-body" style="padding:0;max-height:300px;overflow-y:auto;">
+            <div class="card-body scanner-history__body" id="historyBody" style="padding:0;max-height:320px;overflow-y:auto;">
                 <table>
                     <thead>
                         <tr><th>Student</th><th>Time</th><th>Status</th></tr>
@@ -78,8 +117,13 @@
 
 <style>
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
-.scan-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 24px; text-align: center; }
-.scan-success i { font-size: 48px; color: var(--accent-success); margin-bottom: 12px; }
-.scan-fail { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 24px; text-align: center; }
-.scan-fail i { font-size: 48px; color: var(--accent-danger); margin-bottom: 12px; }
 </style>
+
+<script>
+(function() {
+    var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (ios && location.protocol !== 'https:') {
+        document.getElementById('httpsNotice').style.display = 'flex';
+    }
+})();
+</script>

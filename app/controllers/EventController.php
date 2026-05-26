@@ -11,12 +11,6 @@ class EventController extends Controller {
 
     public function index() {
         $events = $this->eventModel->getAll();
-
-        if ($this->isAjax()) {
-            $this->json(['success' => true, 'events' => $events]);
-            return;
-        }
-
         $data = ['pageTitle' => 'Emergency Events', 'events' => $events];
         $this->view('layouts/header', $data);
         $this->view('admin/events', $data);
@@ -24,40 +18,58 @@ class EventController extends Controller {
     }
 
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('/event'); return; }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/event');
+            return;
+        }
 
         $type = InputValidator::sanitizeString($_POST['event_type'] ?? 'Earthquake');
         $desc = InputValidator::sanitizeString($_POST['description'] ?? '');
 
-        $id = $this->eventModel->createEvent([
-            'event_type'     => $type,
-            'event_datetime' => date('Y-m-d H:i:s'),
-            'description'    => $desc,
-            'status'         => 'Active',
-            'created_by'     => getUserId(),
-        ]);
-
-        $this->eventModel->initializeStatuses($id);
-
-        if ($this->isAjax()) {
-            $this->json(['success' => true, 'message' => 'Emergency event created. All students initialized as Missing.', 'event_id' => $id]);
+        if (empty($type)) {
+            $this->setFlash('error', 'Event type is required.');
+            $this->redirect('/event');
             return;
         }
-        $this->setFlash('success', 'Emergency event created.');
+
+        try {
+            $id = $this->eventModel->createEvent([
+                'event_type'     => $type,
+                'event_datetime' => date('Y-m-d H:i:s'),
+                'description'    => $desc ?: null,
+                'status'         => 'Active',
+                'created_by'     => getUserId(),
+            ]);
+
+            $this->eventModel->initializeStatuses($id);
+            $this->setFlash('success', 'Emergency declared! All students marked as Missing.');
+        } catch (\Exception $e) {
+            $this->setFlash('error', 'Failed to create event: ' . $e->getMessage());
+        }
+
         $this->redirect('/event');
     }
 
     public function close($id = null) {
-        $id = InputValidator::validateId($id);
-        if (!$id) { $this->json(['success' => false], 400); return; }
-
-        $this->eventModel->close($id);
-
-        if ($this->isAjax()) {
-            $this->json(['success' => true, 'message' => 'Event closed.']);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/event');
             return;
         }
-        $this->setFlash('success', 'Event closed.');
+
+        $id = InputValidator::validateId($id);
+        if (!$id) {
+            $this->setFlash('error', 'Invalid event ID.');
+            $this->redirect('/event');
+            return;
+        }
+
+        try {
+            $this->eventModel->close($id);
+            $this->setFlash('success', 'Event closed successfully.');
+        } catch (\Exception $e) {
+            $this->setFlash('error', 'Failed to close event.');
+        }
+
         $this->redirect('/event');
     }
 }
