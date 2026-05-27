@@ -55,15 +55,17 @@
                     </thead>
                     <tbody id="recentScansBody">
                         <?php if (empty($recentScans)): ?>
-                            <tr><td colspan="4" class="text-center text-muted" style="padding:40px;">No scan activity yet</td></tr>
+                            <tr>
+                                <td colspan="4" class="text-center text-muted" style="padding:40px;">No scan activity yet</td>
+                            </tr>
                         <?php else: ?>
                             <?php foreach ($recentScans as $scan): ?>
-                            <tr>
-                                <td><strong><?= e($scan['first_name'] . ' ' . $scan['last_name']) ?></strong></td>
-                                <td><?= e($scan['section_name']) ?></td>
-                                <td><?= date('M d, g:i A', strtotime($scan['scan_time'])) ?></td>
-                                <td><span class="badge badge-<?= $scan['scan_result'] === 'Valid' ? 'success' : 'danger' ?>"><?= e($scan['scan_result']) ?></span></td>
-                            </tr>
+                                <tr>
+                                    <td><strong><?= e($scan['first_name'] . ' ' . $scan['last_name']) ?></strong></td>
+                                    <td><?= e($scan['section_name']) ?></td>
+                                    <td><?= date('M d, g:i A', strtotime($scan['scan_time'])) ?></td>
+                                    <td><span class="badge badge-<?= $scan['scan_result'] === 'Valid' ? 'success' : 'danger' ?>"><?= e($scan['scan_result']) ?></span></td>
+                                </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -89,14 +91,16 @@
                     </thead>
                     <tbody>
                         <?php if (empty($classes)): ?>
-                            <tr><td colspan="3" class="text-center text-muted" style="padding:40px;">No classes found</td></tr>
+                            <tr>
+                                <td colspan="3" class="text-center text-muted" style="padding:40px;">No classes found</td>
+                            </tr>
                         <?php else: ?>
                             <?php foreach ($classes as $class): ?>
-                            <tr>
-                                <td><strong><?= e($class['section_name']) ?></strong></td>
-                                <td><?= e($class['program']) ?></td>
-                                <td><span class="badge badge-primary"><?= e($class['student_count']) ?></span></td>
-                            </tr>
+                                <tr>
+                                    <td><strong><?= e($class['section_name']) ?></strong></td>
+                                    <td><?= e($class['program']) ?></td>
+                                    <td><span class="badge badge-primary"><?= e($class['student_count']) ?></span></td>
+                                </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
