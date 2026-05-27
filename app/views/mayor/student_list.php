@@ -122,12 +122,25 @@
         });
     }
 
+    // Run filters immediately on page load so the active "All" button
+    // state is applied and rows are correctly visible from the start
+    applyFilters();
+
+    // ── Update stat cards safely (they only exist when event is active) ──
+    function updateStatCards(summary) {
+        const safeEl     = document.getElementById('safeVal');
+        const missingEl  = document.getElementById('missingVal');
+        const notInClsEl = document.getElementById('notInClassVal');
+        if (safeEl)     safeEl.textContent     = summary.safe_count     ?? 0;
+        if (missingEl)  missingEl.textContent  = summary.missing_count  ?? 0;
+        if (notInClsEl) notInClsEl.textContent = summary.not_in_class_count ?? 0;
+    }
+
     // ── Render rows (called after refresh) ───────────────────────
     function renderRows(students) {
         const tbody = document.getElementById('statusBody');
         if (!students || !students.length) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:60px;">No student statuses available</td></tr>';
-            applyFilters();
             return;
         }
 
@@ -165,15 +178,8 @@
         try {
             const data = await App.get('/scan/students');
             if (data.success) {
-                const safeEl     = document.getElementById('safeVal');
-                const missingEl  = document.getElementById('missingVal');
-                const notInClsEl = document.getElementById('notInClassVal');
-                if (safeEl)     safeEl.textContent     = data.summary.safe_count;
-                if (missingEl)  missingEl.textContent  = data.summary.missing_count;
-                if (notInClsEl) notInClsEl.textContent = data.summary.not_in_class_count;
-
+                updateStatCards(data.summary);
                 renderRows(data.students);
-                App.toast('Student statuses refreshed', 'success');
             }
         } catch (e) {
             App.toast('Failed to refresh', 'error');

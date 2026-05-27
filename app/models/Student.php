@@ -113,7 +113,7 @@ class Student extends Model {
 
     public function findByQRCode($qrCode) {
         $stmt = $this->query(
-            "SELECT s.*, c.section_name FROM student s
+            "SELECT s.*, c.class_id, c.section_name FROM student s
              JOIN class c ON s.class_id = c.class_id
              WHERE s.qr_code_value = :qr AND s.profile_status = 'Active'",
             [':qr' => $qrCode]
