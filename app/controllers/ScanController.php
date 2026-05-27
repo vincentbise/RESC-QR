@@ -55,6 +55,17 @@ class ScanController extends Controller {
             return;
         }
 
+        // Ensure mayor can only scan students from their own class
+        $mayorClassId = $_SESSION['class_id'] ?? null;
+        if ($mayorClassId && $student['class_id'] != $mayorClassId) {
+            $this->json([
+                'success'     => false,
+                'message'     => $student['first_name'] . ' ' . $student['last_name'] . ' is not in your class.',
+                'scan_result' => 'Invalid',
+            ]);
+            return;
+        }
+
         // Block duplicate scans — already Safe
         $currentStatus = $this->statusModel->getStudentStatus($student['student_id'], $activeEvent['event_id']);
         if ($currentStatus && $currentStatus['status'] === 'Safe') {
@@ -96,12 +107,8 @@ class ScanController extends Controller {
         $summary = ['safe_count' => 0, 'missing_count' => 0, 'not_in_class_count' => 0, 'total' => 0];
 
         if ($activeEvent) {
-            $statuses = $this->statusModel->getStatusesByEvent($activeEvent['event_id']);
-            if ($classId) {
-                $statuses = array_filter($statuses, fn($s) => true);
-            }
-            $students = $statuses;
-            $summary = $this->statusModel->getSummary($activeEvent['event_id']);
+            $students = $this->statusModel->getStatusesByEvent($activeEvent['event_id'], $classId);
+            $summary  = $this->statusModel->getSummary($activeEvent['event_id'], $classId);
         }
 
         if ($this->isAjax()) {

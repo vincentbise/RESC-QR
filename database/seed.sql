@@ -15,13 +15,13 @@ INSERT INTO `class` (`section_name`, `program`, `year_level`) VALUES
 
 -- Class Mayors (password: Admin@123)
 INSERT INTO `class_mayor` (`class_id`, `name`, `email`, `password_hash`, `phone`) VALUES
-(1, 'Maria Santos', 'maria.santos@usep.edu.ph', '$2y$12$ajF25pDdjMN2XyHvCMgDNepE6VjRNA4Kt2Xy0yhr7IwVY1yY2maAa', '09171234567'),
+(1, 'Sora Cutler', 'mayor@usep.edu.ph', '$2y$12$ajF25pDdjMN2XyHvCMgDNepE6VjRNA4Kt2Xy0yhr7IwVY1yY2maAa', '09171234567'),
 (2, 'Juan Dela Cruz', 'juan.delacruz@usep.edu.ph', '$2y$12$ajF25pDdjMN2XyHvCMgDNepE6VjRNA4Kt2Xy0yhr7IwVY1yY2maAa', '09181234567'),
 (3, 'Ana Reyes', 'ana.reyes@usep.edu.ph', '$2y$12$ajF25pDdjMN2XyHvCMgDNepE6VjRNA4Kt2Xy0yhr7IwVY1yY2maAa', '09191234567');
 
 -- Students (password: Student@123)
 INSERT INTO `student` (`class_id`, `first_name`, `last_name`, `email`, `password_hash`, `phone`, `course`, `year_level`, `qr_code_value`, `profile_status`) VALUES
-(1, 'Carlos', 'Garcia', 'carlos.garcia@usep.edu.ph', '$2y$12$REBX8AY5lXAsyekagLN59.FBZpAWGtXkp/Q3caeoPbj8XR.Rjn3Q6', '09201111111', 'BSIT', '1st Year', 'RESC-STU-00001', 'Active'),
+(1, 'Vincent', 'Anonuevo', 'student@usep.edu.ph', '$2y$12$REBX8AY5lXAsyekagLN59.FBZpAWGtXkp/Q3caeoPbj8XR.Rjn3Q6', '09201111111', 'BSIT', '1st Year', 'RESC-STU-00001', 'Active'),
 (1, 'Sophia', 'Mendoza', 'sophia.mendoza@usep.edu.ph', '$2y$12$REBX8AY5lXAsyekagLN59.FBZpAWGtXkp/Q3caeoPbj8XR.Rjn3Q6', '09202222222', 'BSIT', '1st Year', 'RESC-STU-00002', 'Active'),
 (1, 'Miguel', 'Ramos', 'miguel.ramos@usep.edu.ph', '$2y$12$REBX8AY5lXAsyekagLN59.FBZpAWGtXkp/Q3caeoPbj8XR.Rjn3Q6', '09203333333', 'BSIT', '1st Year', 'RESC-STU-00003', 'Active'),
 (1, 'Isabella', 'Torres', 'isabella.torres@usep.edu.ph', '$2y$12$REBX8AY5lXAsyekagLN59.FBZpAWGtXkp/Q3caeoPbj8XR.Rjn3Q6', '09204444444', 'BSIT', '1st Year', 'RESC-STU-00004', 'Active'),
