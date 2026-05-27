@@ -12,7 +12,6 @@ class DashboardController extends Controller {
 
         $db = Database::getInstance()->getConnection();
 
-        // Active event with status counts
         $stmt = $db->prepare(
             "SELECT e.event_id, e.event_type, e.event_datetime, e.status,
                     COALESCE(v.safe_count, 0) as safe_count,
@@ -27,7 +26,6 @@ class DashboardController extends Controller {
         $stmt->execute();
         $activeEvent = $stmt->fetch();
 
-        // Recent scans
         $stmt2 = $db->prepare(
             "SELECT q.scan_time, q.scan_result, s.first_name, s.last_name, c.section_name
              FROM qr_scan_log q
@@ -60,11 +58,10 @@ class DashboardController extends Controller {
 
         $db = Database::getInstance()->getConnection();
 
-        // Live counts from active event
         $stmt = $db->prepare(
             "SELECT
                 COALESCE(SUM(ss.status='Safe'), 0) AS safe_count,
-                COALESCE(SUM(ss.status='Missing'), 0) AS missing_count,
+                COALESCE(SUM(ss.status='Not Yet Scanned'), 0) AS missing_count,
                 COALESCE(SUM(ss.status='Not in class'), 0) AS not_in_class_count
              FROM student_status ss
              JOIN emergency_event e ON ss.event_id = e.event_id
@@ -73,7 +70,6 @@ class DashboardController extends Controller {
         $stmt->execute();
         $counts = $stmt->fetch();
 
-        // Recent scans for live update
         $stmt2 = $db->prepare(
             "SELECT q.scan_time, q.scan_result, s.first_name, s.last_name, c.section_name
              FROM qr_scan_log q

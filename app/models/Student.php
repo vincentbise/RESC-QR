@@ -10,8 +10,10 @@ class Student extends Model {
         $params = [];
 
         if ($search) {
-            $sql .= " AND (s.first_name LIKE :search OR s.last_name LIKE :search OR s.email LIKE :search)";
-            $params[':search'] = '%' . $search . '%';
+            $sql .= " AND (s.first_name LIKE :search1 OR s.last_name LIKE :search2 OR s.email LIKE :search3)";
+            $params[':search1'] = '%' . $search . '%';
+            $params[':search2'] = '%' . $search . '%';
+            $params[':search3'] = '%' . $search . '%';
         }
         if ($classId) {
             $sql .= " AND s.class_id = :class_id";

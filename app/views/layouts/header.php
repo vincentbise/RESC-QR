@@ -15,6 +15,11 @@
     <meta name="csrf-token" content="<?= generateCSRFToken() ?>">
 </head>
 <body>
+<script>
+    const BASE_URL = '<?= BASE_URL ?>';
+    const CSRF_TOKEN = '<?= generateCSRFToken() ?>';
+</script>
+<script src="<?= publicUrl('js/app.js') ?>"></script>
 <div class="app-layout">
 
 <?php require_once ROOT_PATH . '/app/views/layouts/sidebar.php'; ?>

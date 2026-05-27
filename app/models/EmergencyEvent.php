@@ -46,7 +46,7 @@ class EmergencyEvent extends Model {
     public function initializeStatuses($eventId) {
         $this->query(
             "INSERT IGNORE INTO student_status (student_id, event_id, status)
-             SELECT s.student_id, :eid, 'Missing'
+             SELECT s.student_id, :eid, 'Not Yet Scanned'
              FROM student s WHERE s.profile_status = 'Active'",
             [':eid' => $eventId]
         );

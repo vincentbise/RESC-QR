@@ -18,7 +18,7 @@
     <div class="stat-card danger">
         <div class="stat-header"><div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div></div>
         <div class="stat-value" id="missingVal"><?= (int)($summary['missing_count'] ?? 0) ?></div>
-        <div class="stat-label">Missing</div>
+        <div class="stat-label">Not Yet Scanned</div>
     </div>
     <div class="stat-card warning">
         <div class="stat-header"><div class="stat-icon"><i class="fas fa-user-slash"></i></div></div>
@@ -40,7 +40,7 @@
         <div class="d-flex gap-1">
             <button class="btn btn-sm btn-success status-filter active" data-filter="all">All</button>
             <button class="btn btn-sm btn-secondary status-filter" data-filter="Safe">Safe</button>
-            <button class="btn btn-sm btn-secondary status-filter" data-filter="Missing">Missing</button>
+            <button class="btn btn-sm btn-secondary status-filter" data-filter="Not Yet Scanned">Not Yet Scanned</button>
         </div>
     </div>
     <div class="card-body" style="padding:0;">
@@ -54,7 +54,13 @@
                         <tr><td colspan="5" class="text-center text-muted" style="padding:60px;">No student statuses available</td></tr>
                     <?php else: ?>
                         <?php foreach ($students as $s): ?>
-                        <tr class="status-row" data-status="<?= e($s['status']) ?>">
+                        <?php
+                            $status   = $s['status'];
+                            $badgeCls = $status === 'Safe' ? 'success' : ($status === 'Not Yet Scanned' ? 'danger' : 'warning');
+                        ?>
+                        <tr class="status-row"
+                            data-status="<?= e($status) ?>"
+                            data-name="<?= e(strtolower($s['first_name'] . ' ' . $s['last_name'])) ?>">
                             <td>
                                 <div class="d-flex align-center gap-1">
                                     <div class="avatar avatar-sm" style="background:hsl(<?= $s['student_id'] * 37 % 360 ?>,60%,50%)">
@@ -65,13 +71,9 @@
                             </td>
                             <td><span class="badge badge-info"><?= e($s['section_name']) ?></span></td>
                             <td><?= e($s['phone'] ?? '—') ?></td>
+                            <td><span class="badge badge-<?= $badgeCls ?>"><?= e($status) ?></span></td>
                             <td>
-                                <span class="badge badge-<?= $s['status'] === 'Safe' ? 'success' : ($s['status'] === 'Missing' ? 'danger' : 'warning') ?>">
-                                    <?= e($s['status']) ?>
-                                </span>
-                            </td>
-                            <td>
-                                <?php if ($s['status'] === 'Missing' && !empty($s['phone'])): ?>
+                                <?php if ($status === 'Not Yet Scanned' && !empty($s['phone'])): ?>
                                     <a href="tel:<?= e($s['phone']) ?>" class="btn btn-sm btn-warning btn-icon" title="Call">
                                         <i class="fas fa-phone"></i>
                                     </a>
@@ -87,38 +89,97 @@
 </div>
 
 <script>
-document.querySelectorAll('.status-filter').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.status-filter').forEach(b => { b.classList.remove('active'); b.classList.replace('btn-success','btn-secondary'); });
-        btn.classList.add('active');
-        btn.classList.replace('btn-secondary','btn-success');
-        const filter = btn.dataset.filter;
-        document.querySelectorAll('.status-row').forEach(row => {
-            row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+(function () {
+    // ── Filter buttons ────────────────────────────────────────────
+    function setActiveFilter(btn) {
+        document.querySelectorAll('.status-filter').forEach(b => {
+            b.classList.remove('active', 'btn-success');
+            b.classList.add('btn-secondary');
+        });
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('active', 'btn-success');
+    }
+
+    document.querySelectorAll('.status-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            setActiveFilter(btn);
+            applyFilters();
         });
     });
-});
 
-document.getElementById('statusSearch').addEventListener('input', App.debounce(function() {
-    const q = this.value.toLowerCase();
-    document.querySelectorAll('.status-row').forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-}, 200));
+    // ── Live search ───────────────────────────────────────────────
+    document.getElementById('statusSearch').addEventListener('input', App.debounce(applyFilters, 150));
 
-async function refreshStudentList() {
-    try {
-        const data = await App.get('/scan/students');
-        if (data.success) {
-            document.getElementById('safeVal').textContent = data.summary.safe_count;
-            document.getElementById('missingVal').textContent = data.summary.missing_count;
-            document.getElementById('notInClassVal').textContent = data.summary.not_in_class_count;
-            App.toast('Student statuses refreshed', 'success');
-        }
-    } catch (e) {
-        App.toast('Failed to refresh', 'error');
+    function applyFilters() {
+        const query     = document.getElementById('statusSearch').value.trim().toLowerCase();
+        const activeBtn = document.querySelector('.status-filter.active');
+        const filterVal = activeBtn ? activeBtn.dataset.filter : 'all';
+
+        document.querySelectorAll('#statusBody .status-row').forEach(row => {
+            const nameMatch   = !query || row.dataset.name.includes(query);
+            const statusMatch = filterVal === 'all' || row.dataset.status === filterVal;
+            row.style.display = (nameMatch && statusMatch) ? '' : 'none';
+        });
     }
-}
 
-setInterval(refreshStudentList, 10000);
+    // ── Render rows (called after refresh) ───────────────────────
+    function renderRows(students) {
+        const tbody = document.getElementById('statusBody');
+        if (!students || !students.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:60px;">No student statuses available</td></tr>';
+            applyFilters();
+            return;
+        }
+
+        const badgeClass = s => s === 'Safe' ? 'success' : (s === 'Not Yet Scanned' ? 'danger' : 'warning');
+
+        tbody.innerHTML = students.map(s => {
+            const initials = (s.first_name[0] + s.last_name[0]).toUpperCase();
+            const hue      = (s.student_id * 37) % 360;
+            const phone    = s.phone ? App.escapeHtml(s.phone) : '';
+            const callBtn  = (s.status === 'Not Yet Scanned' && phone)
+                ? `<a href="tel:${phone}" class="btn btn-sm btn-warning btn-icon" title="Call"><i class="fas fa-phone"></i></a>`
+                : '';
+            return `<tr class="status-row"
+                        data-status="${App.escapeHtml(s.status)}"
+                        data-name="${App.escapeHtml((s.first_name + ' ' + s.last_name).toLowerCase())}">
+                <td>
+                    <div class="d-flex align-center gap-1">
+                        <div class="avatar avatar-sm" style="background:hsl(${hue},60%,50%)">${initials}</div>
+                        <strong>${App.escapeHtml(s.first_name + ' ' + s.last_name)}</strong>
+                    </div>
+                </td>
+                <td><span class="badge badge-info">${App.escapeHtml(s.section_name)}</span></td>
+                <td>${phone || '—'}</td>
+                <td><span class="badge badge-${badgeClass(s.status)}">${App.escapeHtml(s.status)}</span></td>
+                <td>${callBtn}</td>
+            </tr>`;
+        }).join('');
+
+        // Re-apply current search/filter after re-render
+        applyFilters();
+    }
+
+    // ── Live refresh ──────────────────────────────────────────────
+    window.refreshStudentList = async function () {
+        try {
+            const data = await App.get('/scan/students');
+            if (data.success) {
+                const safeEl     = document.getElementById('safeVal');
+                const missingEl  = document.getElementById('missingVal');
+                const notInClsEl = document.getElementById('notInClassVal');
+                if (safeEl)     safeEl.textContent     = data.summary.safe_count;
+                if (missingEl)  missingEl.textContent  = data.summary.missing_count;
+                if (notInClsEl) notInClsEl.textContent = data.summary.not_in_class_count;
+
+                renderRows(data.students);
+                App.toast('Student statuses refreshed', 'success');
+            }
+        } catch (e) {
+            App.toast('Failed to refresh', 'error');
+        }
+    };
+
+    setInterval(window.refreshStudentList, 10000);
+})();
 </script>

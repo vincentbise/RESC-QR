@@ -17,7 +17,6 @@ class IncidentReport extends Model {
         $statusModel = new StudentStatus();
         $counts = $statusModel->getSummary($eventId);
 
-        // getSummary returns false/null when no student_status rows exist for the event
         $safeCount       = isset($counts['safe_count'])       ? (int)$counts['safe_count']       : 0;
         $missingCount    = isset($counts['missing_count'])    ? (int)$counts['missing_count']    : 0;
         $notInClassCount = isset($counts['not_in_class_count']) ? (int)$counts['not_in_class_count'] : 0;

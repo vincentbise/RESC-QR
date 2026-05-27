@@ -18,6 +18,8 @@
             --text-muted: #6b7a96;
             --accent-red: #cc1b2b;
             --accent-red-bright: #e52535;
+            --accent-warning: #f59e0b;
+            --accent-success: #10b981;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -119,14 +121,17 @@
             transition: all 0.2s ease;
         }
 
-        .input-field input::placeholder {
-            color: var(--text-muted);
-        }
+        .input-field input::placeholder { color: var(--text-muted); }
 
         .input-field input:focus {
             outline: none;
             border-color: var(--accent-red);
             box-shadow: 0 0 0 3px rgba(204, 27, 43, 0.15);
+        }
+
+        .input-field input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .btn-login {
@@ -145,14 +150,21 @@
             letter-spacing: 0.3px;
         }
 
-        .btn-login:hover {
+        .btn-login:hover:not(:disabled) {
             background: var(--accent-red-bright);
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(204, 27, 43, 0.4);
         }
 
         .btn-login:active { transform: translateY(0); }
-        .btn-login:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            background: #555;
+        }
+
         .btn-login .spinner { display: none; }
         .btn-login.loading .spinner { display: inline-block; }
         .btn-login.loading .btn-text { display: none; }
@@ -163,10 +175,12 @@
             margin-bottom: 20px;
             font-size: 14px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
             animation: slideDown 0.3s ease;
         }
+
+        .alert-box .alert-icon { flex-shrink: 0; margin-top: 1px; }
 
         .alert-box.error {
             background: #2e1414;
@@ -177,7 +191,73 @@
         .alert-box.success {
             background: #0f2e23;
             border: 1px solid #1a5c3e;
-            color: #10b981;
+            color: var(--accent-success);
+        }
+
+        .alert-box.warning {
+            background: #2e2510;
+            border: 1px solid #5c4e1a;
+            color: var(--accent-warning);
+        }
+
+        /* Attempt dots */
+        .attempt-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            justify-content: center;
+        }
+
+        .attempt-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .attempt-dots {
+            display: flex;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+
+        .dot.used {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+
+        /* Countdown lockout box */
+        .lockout-box {
+            display: none;
+            text-align: center;
+            padding: 18px 16px;
+            background: #2e2510;
+            border: 1px solid #5c4e1a;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: var(--accent-warning);
+            font-size: 14px;
+        }
+
+        .lockout-box .countdown-num {
+            font-size: 32px;
+            font-weight: 800;
+            display: block;
+            margin: 6px 0 4px;
+            color: var(--accent-warning);
+            letter-spacing: -1px;
+        }
+
+        .lockout-box .countdown-label {
+            font-size: 12px;
+            color: var(--text-muted);
         }
 
         @keyframes slideDown {
@@ -197,12 +277,19 @@
 
             <?php $flash = getFlash(); if ($flash): ?>
                 <div class="alert-box <?= e($flash['type']) ?>">
-                    <i class="fas fa-<?= $flash['type'] === 'error' ? 'exclamation-circle' : 'check-circle' ?>"></i>
-                    <?= e($flash['message']) ?>
+                    <i class="fas fa-<?= $flash['type'] === 'error' ? 'exclamation-circle' : 'check-circle' ?> alert-icon"></i>
+                    <span><?= e($flash['message']) ?></span>
                 </div>
             <?php endif; ?>
 
             <div id="ajax-alert" class="alert-box" style="display:none;"></div>
+
+            <!-- Lockout countdown -->
+            <div class="lockout-box" id="lockoutBox">
+                <i class="fas fa-lock"></i>
+                <span class="countdown-num" id="countdownNum">20</span>
+                <span class="countdown-label">seconds until you can try again</span>
+            </div>
 
             <form id="loginForm" method="POST" action="<?= baseUrl('auth/authenticate') ?>">
                 <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
@@ -228,51 +315,177 @@
                     <span class="spinner"><i class="fas fa-circle-notch fa-spin"></i> Signing in...</span>
                 </button>
             </form>
+
+            <div class="attempt-indicator" id="attemptIndicator" style="display:none;">
+                <span class="attempt-label">Attempts:</span>
+                <div class="attempt-dots">
+                    <div class="dot" id="dot1"></div>
+                    <div class="dot" id="dot2"></div>
+                    <div class="dot" id="dot3"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const loginBtn = document.getElementById('loginBtn');
-        const ajaxAlert = document.getElementById('ajax-alert');
-        loginBtn.classList.add('loading');
-        loginBtn.disabled = true;
-        ajaxAlert.style.display = 'none';
+    (function() {
+        const LOCKOUT_KEY = 'resc_qr_lockout_until';
+        const ATTEMPTS_KEY = 'resc_qr_used_attempts';
+        const MAX_ATTEMPTS = 3;
+        const LOCKOUT_DURATION = 20; 
 
-        const formData = new FormData(e.target);
+        const loginBtn     = document.getElementById('loginBtn');
+        const ajaxAlert    = document.getElementById('ajax-alert');
+        const lockoutBox   = document.getElementById('lockoutBox');
+        const countdownNum = document.getElementById('countdownNum');
+        const indicator    = document.getElementById('attemptIndicator');
+        const emailInput   = document.getElementById('email');
+        const passInput    = document.getElementById('password');
 
-        try {
-            const response = await fetch(e.target.action, {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+        let countdownTimer = null;
+        let usedAttempts   = parseInt(localStorage.getItem(ATTEMPTS_KEY) || '0', 10);
 
-            const data = await response.json();
-
-            if (data.success) {
-                ajaxAlert.className = 'alert-box success';
-                ajaxAlert.innerHTML = '<i class="fas fa-check-circle"></i> Login successful! Redirecting...';
-                ajaxAlert.style.display = 'flex';
-                setTimeout(() => {
-                    window.location.href = '<?= BASE_URL ?>' + data.redirect;
-                }, 500);
-            } else {
-                ajaxAlert.className = 'alert-box error';
-                ajaxAlert.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + data.message;
-                ajaxAlert.style.display = 'flex';
-                loginBtn.classList.remove('loading');
-                loginBtn.disabled = false;
-            }
-        } catch (err) {
-            ajaxAlert.className = 'alert-box error';
-            ajaxAlert.innerHTML = '<i class="fas fa-exclamation-circle"></i> Connection error. Please try again.';
+        function showAlert(type, html) {
+            ajaxAlert.className = 'alert-box ' + type;
+            ajaxAlert.innerHTML = html;
             ajaxAlert.style.display = 'flex';
+        }
+
+        function hideAlert() {
+            ajaxAlert.style.display = 'none';
+        }
+
+        function updateDots(used) {
+            indicator.style.display = 'flex';
+            for (let i = 1; i <= MAX_ATTEMPTS; i++) {
+                const dot = document.getElementById('dot' + i);
+                dot.classList.toggle('used', i <= used);
+            }
+        }
+
+        function disableForm() {
+            loginBtn.disabled = true;
+            emailInput.disabled = true;
+            passInput.disabled = true;
+        }
+
+        function enableForm() {
+            loginBtn.disabled = false;
+            emailInput.disabled = false;
+            passInput.disabled = false;
+        }
+
+        function lockForm(seconds) {
+            const expiresAt = Date.now() + (seconds * 1000);
+            localStorage.setItem(LOCKOUT_KEY, expiresAt.toString());
+            localStorage.setItem(ATTEMPTS_KEY, MAX_ATTEMPTS.toString());
+
+            usedAttempts = MAX_ATTEMPTS;
+            updateDots(MAX_ATTEMPTS);
+            startCountdown(seconds);
+        }
+
+        function startCountdown(seconds) {
+            if (countdownTimer) clearInterval(countdownTimer);
+
+            lockoutBox.style.display = 'block';
+            countdownNum.textContent = seconds;
+            disableForm();
+            hideAlert();
+
+            let remaining = seconds;
+            countdownTimer = setInterval(() => {
+                remaining--;
+                countdownNum.textContent = Math.max(0, remaining);
+                if (remaining <= 0) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                    unlockForm();
+                }
+            }, 1000);
+        }
+
+        function unlockForm() {
+            lockoutBox.style.display = 'none';
+            enableForm();
+            usedAttempts = 0;
+            localStorage.removeItem(LOCKOUT_KEY);
+            localStorage.setItem(ATTEMPTS_KEY, '0');
+            updateDots(0);
+            indicator.style.display = 'none';
+            showAlert('success', '<i class="fas fa-check-circle alert-icon"></i><span>You can try again now.</span>');
+        }
+
+        // On page load: check if still locked
+        function checkExistingLockout() {
+            const lockUntil = parseInt(localStorage.getItem(LOCKOUT_KEY) || '0', 10);
+            if (lockUntil > Date.now()) {
+                const remainingSec = Math.ceil((lockUntil - Date.now()) / 1000);
+                usedAttempts = MAX_ATTEMPTS;
+                updateDots(MAX_ATTEMPTS);
+                startCountdown(remainingSec);
+            } else if (lockUntil > 0) {
+                localStorage.removeItem(LOCKOUT_KEY);
+                localStorage.setItem(ATTEMPTS_KEY, '0');
+                usedAttempts = 0;
+            } else if (usedAttempts > 0 && usedAttempts < MAX_ATTEMPTS) {
+                updateDots(usedAttempts);
+            }
+        }
+
+        checkExistingLockout();
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (loginBtn.disabled) return;
+
+            loginBtn.classList.add('loading');
+            loginBtn.disabled = true;
+            hideAlert();
+
+            const formData = new FormData(e.target);
+
+            try {
+                const response = await fetch(e.target.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.removeItem(LOCKOUT_KEY);
+                    localStorage.removeItem(ATTEMPTS_KEY);
+                    showAlert('success', '<i class="fas fa-check-circle alert-icon"></i><span>Login successful! Redirecting...</span>');
+                    indicator.style.display = 'none';
+                    setTimeout(() => {
+                        window.location.href = '<?= BASE_URL ?>' + data.redirect;
+                    }, 500);
+                    return;
+                }
+
+                if (data.locked && data.retry_after) {
+                    lockForm(data.retry_after);
+                    loginBtn.classList.remove('loading');
+                    return;
+                }
+
+                usedAttempts = MAX_ATTEMPTS - (data.attempts_left ?? 0);
+                localStorage.setItem(ATTEMPTS_KEY, usedAttempts.toString());
+                updateDots(usedAttempts);
+
+                let msg = '<i class="fas fa-exclamation-circle alert-icon"></i><span>' + (data.message || 'Invalid credentials.') + '</span>';
+                showAlert('error', msg);
+
+            } catch (err) {
+                showAlert('error', '<i class="fas fa-wifi alert-icon"></i><span>Connection error. Please try again.</span>');
+            }
+
             loginBtn.classList.remove('loading');
             loginBtn.disabled = false;
-        }
-    });
+        });
+    })();
     </script>
 </body>
 </html>

@@ -1,5 +1,3 @@
-
-
 <div class="page-header">
     <div>
         <h1>Welcome, <?= e($student['first_name'] ?? '') ?></h1>
@@ -7,28 +5,35 @@
     </div>
 </div>
 
-<?php if ($status): ?>
-<div class="card" style="margin-bottom:24px;border-color:<?= $status['status'] === 'Safe' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' ?>;">
+<?php
+$isSafe          = ($status['status'] === 'Safe');
+$isNotYetScanned = ($status['status'] === 'Not Yet Scanned');
+$isDefault       = !empty($status['default']);
+$accentColor     = $isSafe ? 'rgba(16,185,129,0.3)' : ($isNotYetScanned ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)');
+$iconBg          = $isSafe ? 'rgba(16,185,129,0.12)' : ($isNotYetScanned ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)');
+$iconColor       = $isSafe ? 'var(--accent-success)' : ($isNotYetScanned ? 'var(--accent-danger)' : 'var(--accent-warning)');
+$statusIcon      = $isSafe ? 'shield-alt' : ($isNotYetScanned ? 'exclamation-triangle' : 'user-slash');
+$labelColor      = $isSafe ? 'var(--accent-success)' : ($isNotYetScanned ? 'var(--accent-danger)' : 'var(--accent-warning)');
+?>
+
+<div class="card" style="margin-bottom:24px;border-color:<?= $accentColor ?>;">
     <div class="card-body" style="text-align:center;padding:40px;">
         <div style="width:80px;height:80px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:36px;
-            background:<?= $status['status'] === 'Safe' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)' ?>;
-            color:<?= $status['status'] === 'Safe' ? 'var(--accent-success)' : 'var(--accent-danger)' ?>;">
-            <i class="fas fa-<?= $status['status'] === 'Safe' ? 'shield-alt' : 'exclamation-triangle' ?>"></i>
+            background:<?= $iconBg ?>;color:<?= $iconColor ?>;">
+            <i class="fas fa-<?= $statusIcon ?>"></i>
         </div>
-        <div style="font-size:32px;font-weight:800;margin-bottom:8px;color:<?= $status['status'] === 'Safe' ? 'var(--accent-success)' : 'var(--accent-danger)' ?>;">
+        <div style="font-size:32px;font-weight:800;margin-bottom:8px;color:<?= $labelColor ?>;">
             <?= e($status['status']) ?>
         </div>
         <div class="text-muted">
-            <?= e($status['event_type']) ?> — <?= date('M d, Y g:i A', strtotime($status['event_datetime'])) ?>
+            <?php if ($isDefault): ?>
+                No active emergency — you are marked as <strong>Safe</strong> by default
+            <?php else: ?>
+                <?= e($status['event_type']) ?> — <?= date('M d, Y g:i A', strtotime($status['event_datetime'])) ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>
-<?php else: ?>
-<div class="alert alert-info">
-    <i class="fas fa-info-circle"></i>
-    <span>No active emergency event. Your status will appear here during emergencies.</span>
-</div>
-<?php endif; ?>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
     <div class="card">

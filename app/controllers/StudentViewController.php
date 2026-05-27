@@ -12,7 +12,6 @@ class StudentViewController extends Controller {
         $stmt->execute([':id' => getUserId()]);
         $student = $stmt->fetch();
 
-        $status = null;
         $stmt2 = $db->prepare(
             "SELECT ss.status, e.event_type, e.event_datetime
              FROM student_status ss
@@ -22,6 +21,15 @@ class StudentViewController extends Controller {
         );
         $stmt2->execute([':sid' => getUserId()]);
         $status = $stmt2->fetch();
+
+        if (!$status) {
+            $status = [
+                'status'         => 'Safe',
+                'event_type'     => null,
+                'event_datetime' => null,
+                'default'        => true,
+            ];
+        }
 
         $data = ['pageTitle' => 'My Dashboard', 'student' => $student, 'status' => $status];
         $this->view('layouts/header', $data);

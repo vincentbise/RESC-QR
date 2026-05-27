@@ -32,7 +32,6 @@ class ReportController extends Controller {
             return;
         }
 
-        // Read JSON body sent by App.post()
         $input   = $this->getJsonInput();
         $eventId = InputValidator::validateId($input['event_id'] ?? '');
         $summary = InputValidator::sanitizeString($input['summary'] ?? '');

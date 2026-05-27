@@ -75,7 +75,6 @@
     </div>
 </div>
 
-<!-- Declare Emergency Modal -->
 <div class="modal-overlay" id="createEventModal">
     <div class="modal">
         <div class="modal-header">

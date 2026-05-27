@@ -46,10 +46,11 @@ class AuthController extends Controller {
         }
 
         $ip = $_SERVER['REMOTE_ADDR'];
-        if (!$this->checkLoginAttempts($ip)) {
-            $msg = 'Too many failed attempts. Please try again in 15 minutes.';
+        $lockout = $this->checkLoginAttempts($ip);
+        if ($lockout !== true) {
+            $msg = 'Too many failed attempts. Please wait ' . $lockout . ' seconds before trying again.';
             if ($this->isAjax()) {
-                $this->json(['success' => false, 'message' => $msg], 429);
+                $this->json(['success' => false, 'message' => $msg, 'locked' => true, 'retry_after' => $lockout], 429);
                 return;
             }
             $this->setFlash('error', $msg);
@@ -92,6 +93,7 @@ class AuthController extends Controller {
         }
 
         if ($userId) {
+            $this->clearLoginAttempts($ip);
             session_regenerate_id(true);
             $_SESSION['user_id']   = $userId;
             $_SESSION['user_role'] = $userRole;
@@ -103,10 +105,25 @@ class AuthController extends Controller {
             }
             $this->redirectByRole();
         } else {
-            $this->logFailedAttempt($ip, $email);
+            $attemptsLeft = $this->logFailedAttempt($ip, $email);
             $msg = 'Invalid email or password.';
+            if ($attemptsLeft !== null && $attemptsLeft > 0) {
+                $msg .= ' ' . $attemptsLeft . ' attempt' . ($attemptsLeft === 1 ? '' : 's') . ' remaining.';
+            }
+
+            if ($attemptsLeft === 0) {
+                $lockMsg = 'Too many failed attempts. Please wait 20 seconds before trying again.';
+                if ($this->isAjax()) {
+                    $this->json(['success' => false, 'message' => $lockMsg, 'locked' => true, 'retry_after' => 20, 'attempts_left' => 0], 429);
+                    return;
+                }
+                $this->setFlash('error', $lockMsg);
+                $this->redirect('/auth/login');
+                return;
+            }
+
             if ($this->isAjax()) {
-                $this->json(['success' => false, 'message' => $msg]);
+                $this->json(['success' => false, 'message' => $msg, 'attempts_left' => $attemptsLeft]);
                 return;
             }
             $this->setFlash('error', $msg);
@@ -138,13 +155,31 @@ class AuthController extends Controller {
 
     private function checkLoginAttempts($ip) {
         $db = Database::getInstance()->getConnection();
+
         $stmt = $db->prepare(
-            "SELECT COUNT(*) as attempts FROM login_attempts
-             WHERE ip_address = :ip AND attempt_time > DATE_SUB(NOW(), INTERVAL 30 SECOND)"
+            "SELECT attempt_time FROM login_attempts
+             WHERE ip_address = :ip
+             ORDER BY attempt_time DESC LIMIT 3"
         );
         $stmt->execute([':ip' => $ip]);
-        $result = $stmt->fetch();
-        return ($result['attempts'] < 5);
+        $rows = $stmt->fetchAll();
+
+        if (count($rows) >= 3) {
+            $thirdAttemptTime = $rows[2]['attempt_time'];
+            $stmt2 = $db->prepare(
+                "SELECT GREATEST(0, 20 - TIMESTAMPDIFF(SECOND, :locktime, NOW())) AS wait_seconds"
+            );
+            $stmt2->execute([':locktime' => $thirdAttemptTime]);
+            $wait = $stmt2->fetch();
+            $seconds = (int)($wait['wait_seconds'] ?? 0);
+
+            if ($seconds > 0) {
+                return $seconds;
+            }
+
+            $this->clearLoginAttempts($ip);
+        }
+        return true;
     }
 
     private function logFailedAttempt($ip, $email) {
@@ -153,5 +188,19 @@ class AuthController extends Controller {
             "INSERT INTO login_attempts (ip_address, email, attempt_time) VALUES (:ip, :email, NOW())"
         );
         $stmt->execute([':ip' => $ip, ':email' => $email]);
+
+        $stmt2 = $db->prepare(
+            "SELECT COUNT(*) as attempts FROM login_attempts WHERE ip_address = :ip"
+        );
+        $stmt2->execute([':ip' => $ip]);
+        $result = $stmt2->fetch();
+        $used = (int)$result['attempts'];
+        return max(0, 3 - $used);
+    }
+
+    private function clearLoginAttempts($ip) {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("DELETE FROM login_attempts WHERE ip_address = :ip");
+        $stmt->execute([':ip' => $ip]);
     }
 }

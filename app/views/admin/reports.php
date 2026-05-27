@@ -56,7 +56,6 @@
     </div>
 </div>
 
-<!-- Generate Report Modal -->
 <div class="modal-overlay" id="generateReportModal">
     <div class="modal">
         <div class="modal-header">
@@ -106,7 +105,6 @@ async function generateReport() {
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Generating...';
 
     try {
-        // Send as JSON body — avoids FormData/CSRF mismatch entirely
         const data = await App.post('/report/generate', {
             event_id: eventId,
             summary:  summary
@@ -119,7 +117,6 @@ async function generateReport() {
             const badge = document.getElementById('reportCount');
             const current = parseInt(badge.textContent) || 0;
             badge.textContent = (current + 1) + ' reports';
-            // Reset form
             document.getElementById('report_event_id').value = '';
             document.getElementById('report_summary').value = '';
         } else {
@@ -136,7 +133,6 @@ async function generateReport() {
 function appendReportRow(r) {
     if (!r) return;
     const tbody = document.getElementById('reportsBody');
-    // Remove the "no reports yet" placeholder row if present
     const placeholder = tbody.querySelector('td[colspan]');
     if (placeholder) placeholder.closest('tr').remove();
 
