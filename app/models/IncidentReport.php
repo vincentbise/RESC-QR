@@ -13,14 +13,27 @@ class IncidentReport extends Model {
         return $stmt->fetchAll();
     }
 
+    public function existsForEvent($eventId) {
+        $stmt = $this->query(
+            "SELECT COUNT(*) as total FROM incident_report WHERE event_id = :eid",
+            [':eid' => $eventId]
+        );
+        return (int)$stmt->fetch()['total'] > 0;
+    }
+
     public function generate($eventId, $adminId, $summary) {
+        if ($this->existsForEvent($eventId)) {
+            throw new Exception('A report for this event has already been generated.');
+        }
+
+        require_once ROOT_PATH . '/app/models/StudentStatus.php';
         $statusModel = new StudentStatus();
         $counts = $statusModel->getSummary($eventId);
 
-        $safeCount       = isset($counts['safe_count'])       ? (int)$counts['safe_count']       : 0;
-        $missingCount    = isset($counts['missing_count'])    ? (int)$counts['missing_count']    : 0;
-        $notInClassCount = isset($counts['not_in_class_count']) ? (int)$counts['not_in_class_count'] : 0;
-        $total           = isset($counts['total'])            ? (int)$counts['total']            : 0;
+        $safeCount       = isset($counts['safe_count'])           ? (int)$counts['safe_count']           : 0;
+        $missingCount    = isset($counts['missing_count'])        ? (int)$counts['missing_count']        : 0;
+        $notInClassCount = isset($counts['not_in_class_count'])   ? (int)$counts['not_in_class_count']   : 0;
+        $total           = isset($counts['total'])                ? (int)$counts['total']                : 0;
 
         return $this->insert('incident_report', [
             'event_id'           => $eventId,
