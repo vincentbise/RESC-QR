@@ -1,8 +1,6 @@
 -- ============================================================
--- RESC-QR Database Migration v2
--- Security Enhancement: SPs read from views, not base tables
--- ENUM Rename: 'Missing' → 'Not Yet Scanned'
--- Run this against an existing resc_qr database
+-- RESC-QR Database Migration v2 (NEW OBJECTS ONLY)
+-- Remove all sections that already exist in your database
 -- ============================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -11,61 +9,20 @@ SET time_zone = "+08:00";
 USE `resc_qr`;
 
 -- ============================================================
--- 1. NEW TABLE: activity_log (required by triggers)
+-- 1. ENUM MIGRATION: 'Missing' → 'Not Yet Scanned'
+-- (Only if not already done)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `activity_log` (
-    `log_id`      INT AUTO_INCREMENT PRIMARY KEY,
-    `user_id`     INT DEFAULT NULL,
-    `action`      VARCHAR(100) NOT NULL,
-    `entity_type` VARCHAR(50) NOT NULL,
-    `entity_id`   INT DEFAULT NULL,
-    `details`     TEXT DEFAULT NULL,
-    `created_at`  DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ============================================================
--- 2. ENUM MIGRATION: 'Missing' → 'Not Yet Scanned'
--- ============================================================
--- Step 1: Add 'Not Yet Scanned' to the ENUM temporarily alongside 'Missing'
-ALTER TABLE `student_status`
-  MODIFY COLUMN `status` ENUM('Safe', 'Missing', 'Not Yet Scanned', 'Not in class')
-  NOT NULL DEFAULT 'Not Yet Scanned';
-
--- Step 2: Migrate existing data
-UPDATE `student_status` SET `status` = 'Not Yet Scanned' WHERE `status` = 'Missing';
-
--- Step 3: Remove 'Missing' from ENUM
-ALTER TABLE `student_status`
-  MODIFY COLUMN `status` ENUM('Safe', 'Not Yet Scanned', 'Not in class')
-  NOT NULL DEFAULT 'Not Yet Scanned';
+-- Check if 'Not Yet Scanned' already exists in ENUM
+-- ALTER TABLE `student_status`
+--   MODIFY COLUMN `status` ENUM('Safe', 'Missing', 'Not Yet Scanned', 'Not in class')
+--   NOT NULL DEFAULT 'Not Yet Scanned';
+-- UPDATE `student_status` SET `status` = 'Not Yet Scanned' WHERE `status` = 'Missing';
+-- ALTER TABLE `student_status`
+--   MODIFY COLUMN `status` ENUM('Safe', 'Not Yet Scanned', 'Not in class')
+--   NOT NULL DEFAULT 'Not Yet Scanned';
 
 -- ============================================================
--- 3. UPDATED EXISTING VIEWS
--- ============================================================
-
--- vw_event_status_summary: use 'Not Yet Scanned' instead of 'Missing'
-CREATE OR REPLACE VIEW `vw_event_status_summary` AS
-SELECT
-    `event_id`,
-    SUM(`status` = 'Safe') AS `safe_count`,
-    SUM(`status` = 'Not Yet Scanned') AS `missing_count`,
-    SUM(`status` = 'Not in class') AS `not_in_class_count`,
-    COUNT(*) AS `total_count`
-FROM `student_status`
-GROUP BY `event_id`;
-
--- vw_missing_students: filter on 'Not Yet Scanned'
-CREATE OR REPLACE VIEW `vw_missing_students` AS
-SELECT
-    ss.`event_id`, s.`student_id`, s.`first_name`, s.`last_name`,
-    s.`phone`, s.`profile_image`, c.`section_name`, c.`program`
-FROM `student_status` ss
-JOIN `student` s ON ss.`student_id` = s.`student_id`
-JOIN `class` c ON s.`class_id` = c.`class_id`
-WHERE ss.`status` = 'Not Yet Scanned';
-
--- ============================================================
--- 4. NEW VIEWS (security layer for stored procedures)
+-- 2. NEW VIEWS (if they don't exist)
 -- ============================================================
 
 -- vw_student_full_status: student + latest status + class + emergency contact
@@ -184,72 +141,7 @@ LEFT JOIN `attendance` att ON s.`student_id` = att.`student_id`
 GROUP BY c.`class_id`, c.`section_name`, c.`program`, c.`year_level`;
 
 -- ============================================================
--- 5. ADDITIONAL INDEXES
--- ============================================================
-CREATE INDEX `idx_activity_log_composite` ON `activity_log`(`user_id`, `action`, `created_at`);
-CREATE INDEX `idx_student_email`          ON `student`(`email`);
-CREATE INDEX `idx_event_status_datetime`  ON `emergency_event`(`status`, `event_datetime`);
-CREATE INDEX `idx_scan_log_composite`     ON `qr_scan_log`(`event_id`, `student_id`, `scan_time`);
-
--- ============================================================
--- 6. UPDATE EXISTING STORED PROCEDURES
--- ============================================================
-DELIMITER $$
-
--- Drop and recreate sp_generate_incident_report to use view
-DROP PROCEDURE IF EXISTS `sp_generate_incident_report`$$
-
-CREATE PROCEDURE `sp_generate_incident_report`(
-    IN p_event_id INT,
-    IN p_admin_id INT,
-    IN p_summary TEXT
-)
-BEGIN
-    DECLARE v_total INT DEFAULT 0;
-    DECLARE v_safe INT DEFAULT 0;
-    DECLARE v_missing INT DEFAULT 0;
-    DECLARE v_not_in_class INT DEFAULT 0;
-
-    -- Read from VIEW, not base table (security enhancement)
-    SELECT
-        COALESCE(`total_count`, 0),
-        COALESCE(`safe_count`, 0),
-        COALESCE(`missing_count`, 0),
-        COALESCE(`not_in_class_count`, 0)
-    INTO v_total, v_safe, v_missing, v_not_in_class
-    FROM `vw_event_status_summary`
-    WHERE `event_id` = p_event_id;
-
-    INSERT INTO `incident_report`(`event_id`, `generated_by`, `report_time`, `summary_text`,
-        `total_students`, `safe_count`, `missing_count`, `not_in_class_count`)
-    VALUES(p_event_id, p_admin_id, NOW(), p_summary,
-        v_total, v_safe, v_missing, v_not_in_class);
-END$$
-
--- Drop and recreate sp_log_qr_scan to use 'Not Yet Scanned'
-DROP PROCEDURE IF EXISTS `sp_log_qr_scan`$$
-
-CREATE PROCEDURE `sp_log_qr_scan`(
-    IN p_student_id INT,
-    IN p_event_id INT,
-    IN p_scanned_by INT,
-    IN p_scan_result VARCHAR(20)
-)
-BEGIN
-    INSERT INTO `qr_scan_log`(`student_id`, `event_id`, `scanned_by`, `scan_time`, `scan_result`)
-    VALUES(p_student_id, p_event_id, p_scanned_by, NOW(), p_scan_result);
-
-    IF p_scan_result = 'Valid' THEN
-        INSERT INTO `student_status`(`student_id`, `event_id`, `status`, `updated_at`)
-        VALUES(p_student_id, p_event_id, 'Safe', NOW())
-        ON DUPLICATE KEY UPDATE `status`='Safe', `updated_at`=NOW();
-    END IF;
-END$$
-
-DELIMITER ;
-
--- ============================================================
--- 7. NEW STORED PROCEDURES (all read from views)
+-- 3. NEW STORED PROCEDURES (all read from views)
 -- ============================================================
 DELIMITER $$
 
@@ -257,6 +149,8 @@ DELIMITER $$
 -- sp_get_paginated_students: server-side pagination
 -- Reads from: vw_student_full_status (VIEW)
 -- ---------------------------------------------------------
+DROP PROCEDURE IF EXISTS `sp_get_paginated_students`$$
+
 CREATE PROCEDURE `sp_get_paginated_students`(
     IN p_search VARCHAR(100),
     IN p_class_id INT,
@@ -302,6 +196,8 @@ END$$
 -- sp_get_paginated_scan_logs: paginated scan logs
 -- Reads from: vw_scan_log_detailed (VIEW)
 -- ---------------------------------------------------------
+DROP PROCEDURE IF EXISTS `sp_get_paginated_scan_logs`$$
+
 CREATE PROCEDURE `sp_get_paginated_scan_logs`(
     IN p_page INT,
     IN p_per_page INT
@@ -330,6 +226,8 @@ END$$
 -- sp_get_paginated_events: paginated events
 -- Reads from: vw_active_emergency_summary (VIEW)
 -- ---------------------------------------------------------
+DROP PROCEDURE IF EXISTS `sp_get_paginated_events`$$
+
 CREATE PROCEDURE `sp_get_paginated_events`(
     IN p_page INT,
     IN p_per_page INT
@@ -357,6 +255,8 @@ END$$
 -- sp_get_paginated_reports: paginated incident reports
 -- Reads from: vw_active_emergency_summary (VIEW) joined with incident_report
 -- ---------------------------------------------------------
+DROP PROCEDURE IF EXISTS `sp_get_paginated_reports`$$
+
 CREATE PROCEDURE `sp_get_paginated_reports`(
     IN p_page INT,
     IN p_per_page INT
@@ -385,9 +285,11 @@ END$$
 
 -- ---------------------------------------------------------
 -- sp_update_student_profile: safe student profile update
--- Validates via: vw_student_profile (VIEW)
+-- Validates via: vw_student_full_status (VIEW)
 -- Writes to: student (TABLE)
 -- ---------------------------------------------------------
+DROP PROCEDURE IF EXISTS `sp_update_student_profile`$$
+
 CREATE PROCEDURE `sp_update_student_profile`(
     IN p_student_id INT,
     IN p_first_name VARCHAR(100),
@@ -403,7 +305,7 @@ BEGIN
 
     -- Validate student exists using VIEW (security: no direct table access)
     SELECT COUNT(*) INTO v_exists
-    FROM `vw_student_profile`
+    FROM `vw_student_full_status`
     WHERE `student_id` = p_student_id;
 
     IF v_exists = 0 THEN
@@ -426,7 +328,7 @@ BEGIN
     -- Validate email uniqueness (if provided)
     IF p_email IS NOT NULL AND CHAR_LENGTH(TRIM(p_email)) > 0 THEN
         SELECT COUNT(*) INTO v_email_taken
-        FROM `vw_student_profile`
+        FROM `vw_student_full_status`
         WHERE `email` = p_email AND `student_id` != p_student_id;
 
         IF v_email_taken > 0 THEN
@@ -447,7 +349,7 @@ BEGIN
     WHERE `student_id` = p_student_id;
 
     -- Return updated profile from VIEW
-    SELECT * FROM `vw_student_profile` WHERE `student_id` = p_student_id;
+    SELECT * FROM `vw_student_full_status` WHERE `student_id` = p_student_id;
 END$$
 
 -- ---------------------------------------------------------
@@ -455,6 +357,8 @@ END$$
 -- Writes to: emergency_event, student_status (TABLES)
 -- Returns: new event from vw_active_emergency_summary (VIEW)
 -- ---------------------------------------------------------
+DROP PROCEDURE IF EXISTS `sp_declare_emergency`$$
+
 CREATE PROCEDURE `sp_declare_emergency`(
     IN p_event_type VARCHAR(50),
     IN p_description TEXT,
@@ -506,6 +410,8 @@ END$$
 -- ---------------------------------------------------------
 -- sp_cleanup_old_login_attempts: removes attempts older than 24h
 -- ---------------------------------------------------------
+DROP PROCEDURE IF EXISTS `sp_cleanup_old_login_attempts`$$
+
 CREATE PROCEDURE `sp_cleanup_old_login_attempts`()
 BEGIN
     DELETE FROM `login_attempts`
@@ -515,11 +421,13 @@ END$$
 DELIMITER ;
 
 -- ============================================================
--- 8. NEW STORED FUNCTIONS
+-- 4. NEW STORED FUNCTIONS
 -- ============================================================
 DELIMITER $$
 
 -- fn_get_student_count_by_class: returns count of active students in a class
+DROP FUNCTION IF EXISTS `fn_get_student_count_by_class`$$
+
 CREATE FUNCTION `fn_get_student_count_by_class`(p_class_id INT)
 RETURNS INT
 DETERMINISTIC
@@ -527,12 +435,14 @@ READS SQL DATA
 BEGIN
     DECLARE v_count INT DEFAULT 0;
     SELECT COUNT(*) INTO v_count
-    FROM `vw_student_profile`
+    FROM `vw_student_full_status`
     WHERE `class_id` = p_class_id AND `profile_status` = 'Active';
     RETURN v_count;
 END$$
 
 -- fn_get_safe_percentage: returns percentage of safe students for an event
+DROP FUNCTION IF EXISTS `fn_get_safe_percentage`$$
+
 CREATE FUNCTION `fn_get_safe_percentage`(p_event_id INT)
 RETURNS DECIMAL(5,2)
 DETERMINISTIC
@@ -556,6 +466,8 @@ BEGIN
 END$$
 
 -- fn_is_student_safe: returns 1 if student is safe, 0 otherwise
+DROP FUNCTION IF EXISTS `fn_is_student_safe`$$
+
 CREATE FUNCTION `fn_is_student_safe`(p_student_id INT, p_event_id INT)
 RETURNS TINYINT
 DETERMINISTIC
@@ -575,6 +487,8 @@ BEGIN
 END$$
 
 -- fn_format_scan_time: formats datetime for display
+DROP FUNCTION IF EXISTS `fn_format_scan_time`$$
+
 CREATE FUNCTION `fn_format_scan_time`(p_datetime DATETIME)
 RETURNS VARCHAR(30)
 DETERMINISTIC
@@ -589,36 +503,13 @@ END$$
 DELIMITER ;
 
 -- ============================================================
--- 9. NEW TRIGGERS
+-- 5. NEW TRIGGERS
 -- ============================================================
 DELIMITER $$
 
--- Drop existing triggers that conflict
-DROP TRIGGER IF EXISTS `trg_before_scan_insert`$$
-DROP TRIGGER IF EXISTS `trg_after_scan_insert`$$
-
--- Recreate existing triggers (preserved behavior)
-CREATE TRIGGER `trg_before_scan_insert`
-BEFORE INSERT ON `qr_scan_log`
-FOR EACH ROW
-BEGIN
-    IF NEW.`student_id` != 0 AND NOT EXISTS (SELECT 1 FROM `student` WHERE `student_id` = NEW.`student_id`) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid student_id in QR scan';
-    END IF;
-END$$
-
-CREATE TRIGGER `trg_after_scan_insert`
-AFTER INSERT ON `qr_scan_log`
-FOR EACH ROW
-BEGIN
-    IF NEW.`scan_result` = 'Valid' THEN
-        INSERT INTO `student_status`(`student_id`, `event_id`, `status`, `updated_at`)
-        VALUES(NEW.`student_id`, NEW.`event_id`, 'Safe', NOW())
-        ON DUPLICATE KEY UPDATE `status`='Safe', `updated_at`=NOW();
-    END IF;
-END$$
-
 -- trg_after_student_insert: auto-log student creation
+DROP TRIGGER IF EXISTS `trg_after_student_insert`$$
+
 CREATE TRIGGER `trg_after_student_insert`
 AFTER INSERT ON `student`
 FOR EACH ROW
@@ -635,6 +526,8 @@ BEGIN
 END$$
 
 -- trg_after_student_update: auto-log student profile changes
+DROP TRIGGER IF EXISTS `trg_after_student_update`$$
+
 CREATE TRIGGER `trg_after_student_update`
 AFTER UPDATE ON `student`
 FOR EACH ROW
@@ -673,6 +566,8 @@ BEGIN
 END$$
 
 -- trg_after_event_create: auto-log emergency declaration
+DROP TRIGGER IF EXISTS `trg_after_event_create`$$
+
 CREATE TRIGGER `trg_after_event_create`
 AFTER INSERT ON `emergency_event`
 FOR EACH ROW
@@ -689,6 +584,8 @@ BEGIN
 END$$
 
 -- trg_after_status_update: auto-log status changes
+DROP TRIGGER IF EXISTS `trg_after_status_update`$$
+
 CREATE TRIGGER `trg_after_status_update`
 AFTER UPDATE ON `student_status`
 FOR EACH ROW
@@ -708,6 +605,8 @@ BEGIN
 END$$
 
 -- trg_before_student_delete: prevent hard delete (force soft delete)
+DROP TRIGGER IF EXISTS `trg_before_student_delete`$$
+
 CREATE TRIGGER `trg_before_student_delete`
 BEFORE DELETE ON `student`
 FOR EACH ROW
@@ -719,7 +618,7 @@ END$$
 DELIMITER ;
 
 -- ============================================================
--- 10. SCHEDULED EVENTS (MySQL Event Scheduler)
+-- 6. SCHEDULED EVENTS (MySQL Event Scheduler)
 -- ============================================================
 
 -- Enable the event scheduler
@@ -728,6 +627,8 @@ SET GLOBAL event_scheduler = ON;
 DELIMITER $$
 
 -- evt_cleanup_login_attempts: daily cleanup of old login attempts
+DROP EVENT IF EXISTS `evt_cleanup_login_attempts`$$
+
 CREATE EVENT IF NOT EXISTS `evt_cleanup_login_attempts`
 ON SCHEDULE EVERY 1 DAY
 STARTS (TIMESTAMP(CURDATE()) + INTERVAL 0 HOUR)
@@ -740,6 +641,8 @@ BEGIN
 END$$
 
 -- evt_cleanup_old_sessions: hourly cleanup of synced offline scan buffers
+DROP EVENT IF EXISTS `evt_cleanup_old_sessions`$$
+
 CREATE EVENT IF NOT EXISTS `evt_cleanup_old_sessions`
 ON SCHEDULE EVERY 1 HOUR
 ON COMPLETION PRESERVE
@@ -753,6 +656,8 @@ BEGIN
 END$$
 
 -- evt_auto_close_events: daily auto-close events older than 72 hours
+DROP EVENT IF EXISTS `evt_auto_close_events`$$
+
 CREATE EVENT IF NOT EXISTS `evt_auto_close_events`
 ON SCHEDULE EVERY 1 DAY
 STARTS (TIMESTAMP(CURDATE()) + INTERVAL 1 HOUR)
@@ -770,6 +675,6 @@ END$$
 DELIMITER ;
 
 -- ============================================================
--- Migration complete
+-- Migration complete - NEW OBJECTS ONLY
 -- ============================================================
-SELECT 'Migration v2 completed successfully.' AS `result`;
+SELECT 'Migration v2 (new objects only) completed successfully.' AS `result`;
