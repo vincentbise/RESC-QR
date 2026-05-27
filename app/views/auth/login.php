@@ -303,27 +303,28 @@
             display: none;
             text-align: center;
             padding: 18px 16px;
-            background: #2e2510;
-            border: 1px solid #5c4e1a;
+            background: #622f2f;
+            border: 1px solid #5c1a1a;
             border-radius: 10px;
             margin-bottom: 20px;
             color: var(--accent-warning);
             font-size: 14px;
         }
-
+ 
         .lockout-box .countdown-num {
             font-size: 32px;
             font-weight: 800;
             display: block;
             margin: 6px 0 4px;
-            color: var(--accent-warning);
+            color: #ef4444;
             letter-spacing: -1px;
         }
-
+ 
         .lockout-box .countdown-label {
             font-size: 12px;
-            color: var(--text-muted);
+            color:  #ef4444;
         }
+ 
 
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-10px); }
@@ -439,18 +440,17 @@
         emailInput.addEventListener('input', () => clearFieldError('email'));
         passInput.addEventListener('input',  () => clearFieldError('password'));
 
-        function setFieldError(field, message) {
+        function setFieldError(field, message, doFocus = false) {
             if (field === 'email') {
                 emailInput.classList.add('field-error');
                 emailErrorText.textContent = message;
                 emailErrorMsg.classList.add('visible');
-                emailInput.focus();
+                if (doFocus) emailInput.focus();
             } else {
                 passInput.classList.add('field-error');
                 passErrorText.textContent = message;
                 passErrorMsg.classList.add('visible');
-                passInput.focus();
-                passInput.select();
+                if (doFocus) { passInput.focus(); passInput.select(); }
             }
         }
 
@@ -622,24 +622,44 @@
                     return;
                 }
 
-                if (data.locked && data.retry_after) {
-                    lockForm(data.retry_after);
-                    loginBtn.classList.remove('loading');
-                    return;
-                }
-
+                // Update dots first regardless of lock state
                 usedAttempts = MAX_ATTEMPTS - (data.attempts_left ?? 0);
                 localStorage.setItem(ATTEMPTS_KEY, usedAttempts.toString());
                 updateDots(usedAttempts);
 
-                // Highlight the specific bad field with its own message
-                if (data.field) {
-                    setFieldError(data.field, data.field_message || data.message || 'Invalid credentials.');
+                if (data.locked && data.retry_after) {
+                    // Show the field error briefly so the user knows why, then lock
+                    if (data.field === 'both') {
+                        emailInput.classList.add('field-error');
+                        passInput.classList.add('field-error');
+                    } else if (data.field) {
+                        setFieldError(data.field, data.field_message || 'Invalid credentials.');
+                    }
+                    showAlert('error', '<i class="fas fa-exclamation-circle alert-icon"></i><span>' + data.message + '</span>');
+                    loginBtn.classList.remove('loading');
+                    setTimeout(() => {
+                        hideAlert();
+                        clearAllFieldErrors();
+                        lockForm(data.retry_after);
+                    }, 1000);
+                    return;
                 }
 
-                // Show the general attempts-remaining notice in the top alert
-                if (data.message) {
-                    showAlert('error', '<i class="fas fa-exclamation-circle alert-icon"></i><span>' + data.message + '</span>', true);
+                if (data.field === 'both') {
+                    // Both email and password are wrong
+                    emailInput.classList.add('field-error');
+                    passInput.classList.add('field-error');
+                    // Show field message + attempts remaining together in the alert
+                    const bothMsg = (data.field_message || 'Incorrect email and password.')
+                                  + (data.message ? ' ' + data.message : '');
+                    showAlert('error', '<i class="fas fa-exclamation-circle alert-icon"></i><span>' + bothMsg + '</span>', true);
+                } else if (data.field) {
+                    // One field wrong — inline error under field, attempts notice in alert
+                    setFieldError(data.field, data.field_message || 'Invalid credentials.');
+                    const notice = data.message || '';
+                    if (notice) {
+                        showAlert('error', '<i class="fas fa-exclamation-circle alert-icon"></i><span>' + notice + '</span>', true);
+                    }
                 }
 
             } catch (err) {
