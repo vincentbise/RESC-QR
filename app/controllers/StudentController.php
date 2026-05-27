@@ -14,21 +14,40 @@ class StudentController extends Controller {
     public function index() {
         $search  = InputValidator::sanitizeString($_GET['search'] ?? '');
         $classId = InputValidator::validateId($_GET['class_id'] ?? '');
+        $page    = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 10;
+        $offset  = ($page - 1) * $perPage;
 
-        $students = $this->studentModel->getAll($search, $classId ?: null);
+        $totalStudents = $this->studentModel->countFiltered($search, $classId ?: null);
+        $totalPages    = max(1, (int)ceil($totalStudents / $perPage));
+        $page          = min($page, $totalPages);
+        $offset        = ($page - 1) * $perPage;
+
+        $students = $this->studentModel->getAllPaginated($search, $classId ?: null, $perPage, $offset);
         $classes  = $this->classModel->getAll();
 
         if ($this->isAjax()) {
-            $this->json(['success' => true, 'students' => $students, 'total' => count($students)]);
+            $this->json([
+                'success'       => true,
+                'students'      => $students,
+                'total'         => $totalStudents,
+                'page'          => $page,
+                'per_page'      => $perPage,
+                'total_pages'   => $totalPages,
+            ]);
             return;
         }
 
         $data = [
-            'pageTitle' => 'Students',
-            'students'  => $students,
-            'classes'   => $classes,
-            'search'    => $search,
-            'classId'   => $classId,
+            'pageTitle'     => 'Students',
+            'students'      => $students,
+            'classes'       => $classes,
+            'search'        => $search,
+            'classId'       => $classId,
+            'page'          => $page,
+            'perPage'       => $perPage,
+            'totalStudents' => $totalStudents,
+            'totalPages'    => $totalPages,
         ];
 
         $this->view('layouts/header', $data);

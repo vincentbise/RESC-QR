@@ -25,6 +25,57 @@ class Student extends Model {
         return $stmt->fetchAll();
     }
 
+    public function getAllPaginated($search = '', $classId = null, $limit = 10, $offset = 0) {
+        $sql = "SELECT s.*, c.section_name, c.program
+                FROM student s
+                JOIN class c ON s.class_id = c.class_id
+                WHERE s.profile_status = 'Active'";
+        $params = [];
+
+        if ($search) {
+            $sql .= " AND (s.first_name LIKE :search1 OR s.last_name LIKE :search2 OR s.email LIKE :search3)";
+            $params[':search1'] = '%' . $search . '%';
+            $params[':search2'] = '%' . $search . '%';
+            $params[':search3'] = '%' . $search . '%';
+        }
+        if ($classId) {
+            $sql .= " AND s.class_id = :class_id";
+            $params[':class_id'] = $classId;
+        }
+
+        $sql .= " ORDER BY s.last_name ASC LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function countFiltered($search = '', $classId = null) {
+        $sql = "SELECT COUNT(*) as total
+                FROM student s
+                JOIN class c ON s.class_id = c.class_id
+                WHERE s.profile_status = 'Active'";
+        $params = [];
+
+        if ($search) {
+            $sql .= " AND (s.first_name LIKE :search1 OR s.last_name LIKE :search2 OR s.email LIKE :search3)";
+            $params[':search1'] = '%' . $search . '%';
+            $params[':search2'] = '%' . $search . '%';
+            $params[':search3'] = '%' . $search . '%';
+        }
+        if ($classId) {
+            $sql .= " AND s.class_id = :class_id";
+            $params[':class_id'] = $classId;
+        }
+
+        $stmt = $this->query($sql, $params);
+        return $stmt->fetch()['total'];
+    }
+
     public function findStudentById($id) {
         $stmt = $this->query(
             "SELECT s.*, c.section_name, c.program

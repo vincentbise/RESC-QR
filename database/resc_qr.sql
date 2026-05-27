@@ -227,6 +227,7 @@ CREATE INDEX idx_report_event ON incident_report(event_id);
 CREATE INDEX idx_event_status_datetime ON emergency_event(status, event_datetime);
 CREATE INDEX idx_activity_log_composite ON activity_log(user_id, action, created_at);
 
+
 -- ==========================================
 -- VIEWS
 -- ==========================================
