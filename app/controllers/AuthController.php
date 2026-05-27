@@ -58,37 +58,47 @@ class AuthController extends Controller {
             return;
         }
 
-        $userId = null;
-        $userName = null;
-        $userRole = null;
+        $userId       = null;
+        $userName     = null;
+        $userRole     = null;
+        $emailExists  = false;   // tracks whether the email was found at all
 
         $admin = $this->adminModel->findByEmail($email);
-        if ($admin && password_verify($password, $admin['password_hash'])) {
-            $userId = $admin['admin_id'];
-            $userName = $admin['name'];
-            $userRole = 'admin';
-        }
-
-        if (!$userId) {
-            $mayor = $this->mayorModel->findByEmail($email);
-            if ($mayor && password_verify($password, $mayor['password_hash'])) {
-                $userId = $mayor['mayor_id'];
-                $userName = $mayor['name'];
-                $userRole = 'mayor';
-                $_SESSION['class_id'] = $mayor['class_id'];
-                $_SESSION['section_name'] = $mayor['section_name'];
+        if ($admin) {
+            $emailExists = true;
+            if (password_verify($password, $admin['password_hash'])) {
+                $userId   = $admin['admin_id'];
+                $userName = $admin['name'];
+                $userRole = 'admin';
             }
         }
 
         if (!$userId) {
-            $db = Database::getInstance()->getConnection();
+            $mayor = $this->mayorModel->findByEmail($email);
+            if ($mayor) {
+                $emailExists = true;
+                if (password_verify($password, $mayor['password_hash'])) {
+                    $userId   = $mayor['mayor_id'];
+                    $userName = $mayor['name'];
+                    $userRole = 'mayor';
+                    $_SESSION['class_id']     = $mayor['class_id'];
+                    $_SESSION['section_name'] = $mayor['section_name'];
+                }
+            }
+        }
+
+        if (!$userId) {
+            $db   = Database::getInstance()->getConnection();
             $stmt = $db->prepare("SELECT * FROM student WHERE email = :email AND profile_status = 'Active'");
             $stmt->execute([':email' => $email]);
             $student = $stmt->fetch();
-            if ($student && password_verify($password, $student['password_hash'] ?? '')) {
-                $userId = $student['student_id'];
-                $userName = $student['first_name'] . ' ' . $student['last_name'];
-                $userRole = 'student';
+            if ($student) {
+                $emailExists = true;
+                if (password_verify($password, $student['password_hash'] ?? '')) {
+                    $userId   = $student['student_id'];
+                    $userName = $student['first_name'] . ' ' . $student['last_name'];
+                    $userRole = 'student';
+                }
             }
         }
 
@@ -106,9 +116,23 @@ class AuthController extends Controller {
             $this->redirectByRole();
         } else {
             $attemptsLeft = $this->logFailedAttempt($ip, $email);
-            $msg = 'Invalid email or password.';
+
+            
+            // Specific field hint (email not found vs wrong password)
+            if (!$emailExists) {
+                $field    = 'email';
+                $fieldMsg = 'No account found with that email address.';
+            } else {
+                $field    = 'password';
+                $fieldMsg = 'Incorrect password. Please try again.';
+            }
+
+
+            // General attempts-remaining notice shown separately, not tied to a field
             if ($attemptsLeft !== null && $attemptsLeft > 0) {
-                $msg .= ' ' . $attemptsLeft . ' attempt' . ($attemptsLeft === 1 ? '' : 's') . ' remaining.';
+                $msg = $attemptsLeft . ' attempt' . ($attemptsLeft === 1 ? '' : 's') . ' remaining.';
+            } else {
+                $msg = $fieldMsg;
             }
 
             if ($attemptsLeft === 0) {
@@ -123,7 +147,7 @@ class AuthController extends Controller {
             }
 
             if ($this->isAjax()) {
-                $this->json(['success' => false, 'message' => $msg, 'attempts_left' => $attemptsLeft]);
+                $this->json(['success' => false, 'field_message' => $fieldMsg, 'message' => $msg, 'field' => $field, 'attempts_left' => $attemptsLeft]);
                 return;
             }
             $this->setFlash('error', $msg);

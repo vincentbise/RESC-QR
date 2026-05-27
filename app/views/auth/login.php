@@ -100,13 +100,16 @@
             position: relative;
         }
 
-        .input-field i {
+        /* Left icon — use > i to avoid selecting toggle's icon */
+        .input-field > i {
             position: absolute;
             left: 16px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-muted);
             font-size: 16px;
+            pointer-events: none;
+            z-index: 1;
         }
 
         .input-field input {
@@ -132,6 +135,68 @@
         .input-field input:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        /* Field error state */
+        .input-field input.field-error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+        }
+
+        .field-error-msg {
+            display: none;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #ef4444;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .field-error-msg.visible {
+            display: flex;
+        }
+
+        /* Show/hide password toggle */
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 15px;
+            transition: color 0.2s, background 0.2s;
+            z-index: 2;
+        }
+
+        .toggle-password:hover {
+            color: var(--text-secondary);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .toggle-password:focus-visible {
+            outline: 2px solid var(--accent-red);
+            outline-offset: 1px;
+        }
+
+        /* Prevent the toggle button's inner <i> from being styled by the left-icon rule */
+        .toggle-password i {
+            position: static;
+            transform: none;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        .input-field.has-toggle input {
+            padding-right: 46px;
         }
 
         .btn-login {
@@ -276,7 +341,7 @@
             </div>
 
             <?php $flash = getFlash(); if ($flash): ?>
-                <div class="alert-box <?= e($flash['type']) ?>">
+                <div id="flash-alert" class="alert-box <?= e($flash['type']) ?>">
                     <i class="fas fa-<?= $flash['type'] === 'error' ? 'exclamation-circle' : 'check-circle' ?> alert-icon"></i>
                     <span><?= e($flash['message']) ?></span>
                 </div>
@@ -300,14 +365,25 @@
                         <i class="fas fa-user"></i>
                         <input type="text" id="email" name="email" placeholder="Enter your email" required autocomplete="email">
                     </div>
+                    <p class="field-error-msg" id="emailErrorMsg">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span id="emailErrorText"></span>
+                    </p>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <div class="input-field">
+                    <div class="input-field has-toggle">
                         <i class="fas fa-lock"></i>
                         <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                        <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
+                            <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                        </button>
                     </div>
+                    <p class="field-error-msg" id="passwordErrorMsg">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span id="passwordErrorText"></span>
+                    </p>
                 </div>
 
                 <button type="submit" class="btn-login" id="loginBtn">
@@ -334,21 +410,86 @@
         const MAX_ATTEMPTS = 3;
         const LOCKOUT_DURATION = 20; 
 
-        const loginBtn     = document.getElementById('loginBtn');
-        const ajaxAlert    = document.getElementById('ajax-alert');
-        const lockoutBox   = document.getElementById('lockoutBox');
-        const countdownNum = document.getElementById('countdownNum');
-        const indicator    = document.getElementById('attemptIndicator');
-        const emailInput   = document.getElementById('email');
-        const passInput    = document.getElementById('password');
+        const loginBtn       = document.getElementById('loginBtn');
+        const ajaxAlert      = document.getElementById('ajax-alert');
+        const lockoutBox     = document.getElementById('lockoutBox');
+        const countdownNum   = document.getElementById('countdownNum');
+        const indicator      = document.getElementById('attemptIndicator');
+        const emailInput     = document.getElementById('email');
+        const passInput      = document.getElementById('password');
+        const toggleBtn      = document.getElementById('togglePassword');
+        const toggleIcon     = document.getElementById('togglePasswordIcon');
+        const emailErrorMsg  = document.getElementById('emailErrorMsg');
+        const emailErrorText = document.getElementById('emailErrorText');
+        const passErrorMsg   = document.getElementById('passwordErrorMsg');
+        const passErrorText  = document.getElementById('passwordErrorText');
 
         let countdownTimer = null;
         let usedAttempts   = parseInt(localStorage.getItem(ATTEMPTS_KEY) || '0', 10);
 
-        function showAlert(type, html) {
+        /* ── Show / hide password toggle ── */
+        toggleBtn.addEventListener('click', () => {
+            const isPassword = passInput.type === 'password';
+            passInput.type = isPassword ? 'text' : 'password';
+            toggleIcon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+            toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        });
+
+        /* ── Clear field errors when user starts typing ── */
+        emailInput.addEventListener('input', () => clearFieldError('email'));
+        passInput.addEventListener('input',  () => clearFieldError('password'));
+
+        function setFieldError(field, message) {
+            if (field === 'email') {
+                emailInput.classList.add('field-error');
+                emailErrorText.textContent = message;
+                emailErrorMsg.classList.add('visible');
+                emailInput.focus();
+            } else {
+                passInput.classList.add('field-error');
+                passErrorText.textContent = message;
+                passErrorMsg.classList.add('visible');
+                passInput.focus();
+                passInput.select();
+            }
+        }
+
+        function clearFieldError(field) {
+            if (field === 'email') {
+                emailInput.classList.remove('field-error');
+                emailErrorMsg.classList.remove('visible');
+            } else {
+                passInput.classList.remove('field-error');
+                passErrorMsg.classList.remove('visible');
+            }
+        }
+
+        function clearAllFieldErrors() {
+            clearFieldError('email');
+            clearFieldError('password');
+        }
+
+        let alertDismissTimer = null;
+
+        function showAlert(type, html, autoDismiss = false) {
+            if (alertDismissTimer) { clearTimeout(alertDismissTimer); alertDismissTimer = null; }
             ajaxAlert.className = 'alert-box ' + type;
             ajaxAlert.innerHTML = html;
-            ajaxAlert.style.display = 'flex';
+            ajaxAlert.style.transition = '';
+            ajaxAlert.style.opacity   = '1';
+            ajaxAlert.style.display   = 'flex';
+
+            if (autoDismiss) {
+                alertDismissTimer = setTimeout(() => {
+                    ajaxAlert.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    ajaxAlert.style.opacity    = '0';
+                    ajaxAlert.style.transform  = 'translateY(-6px)';
+                    alertDismissTimer = setTimeout(() => {
+                        ajaxAlert.style.display   = 'none';
+                        ajaxAlert.style.transform = '';
+                    }, 400);
+                }, 3000);
+            }
         }
 
         function hideAlert() {
@@ -367,12 +508,14 @@
             loginBtn.disabled = true;
             emailInput.disabled = true;
             passInput.disabled = true;
+            toggleBtn.disabled = true;
         }
 
         function enableForm() {
             loginBtn.disabled = false;
             emailInput.disabled = false;
             passInput.disabled = false;
+            toggleBtn.disabled = false;
         }
 
         function lockForm(seconds) {
@@ -392,6 +535,7 @@
             countdownNum.textContent = seconds;
             disableForm();
             hideAlert();
+            clearAllFieldErrors();
 
             let remaining = seconds;
             countdownTimer = setInterval(() => {
@@ -413,7 +557,7 @@
             localStorage.setItem(ATTEMPTS_KEY, '0');
             updateDots(0);
             indicator.style.display = 'none';
-            showAlert('success', '<i class="fas fa-check-circle alert-icon"></i><span>You can try again now.</span>');
+            showAlert('success', '<i class="fas fa-check-circle alert-icon"></i><span>You can try again now.</span>', true);
         }
 
         // On page load: check if still locked
@@ -435,6 +579,18 @@
 
         checkExistingLockout();
 
+        // Auto-dismiss the server-rendered flash message after 3 seconds
+        function dismissEl(el) {
+            if (!el) return;
+            el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+            el.style.opacity    = '0';
+            el.style.transform  = 'translateY(-6px)';
+            setTimeout(() => { if (el.parentNode) el.remove(); }, 400);
+        }
+
+        const flashAlert = document.getElementById('flash-alert');
+        if (flashAlert) setTimeout(() => dismissEl(flashAlert), 3000);
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (loginBtn.disabled) return;
@@ -442,6 +598,7 @@
             loginBtn.classList.add('loading');
             loginBtn.disabled = true;
             hideAlert();
+            clearAllFieldErrors();
 
             const formData = new FormData(e.target);
 
@@ -457,7 +614,7 @@
                 if (data.success) {
                     localStorage.removeItem(LOCKOUT_KEY);
                     localStorage.removeItem(ATTEMPTS_KEY);
-                    showAlert('success', '<i class="fas fa-check-circle alert-icon"></i><span>Login successful! Redirecting...</span>');
+                    showAlert('success', '<i class="fas fa-check-circle alert-icon"></i><span>Login successful! Redirecting...</span>', true);
                     indicator.style.display = 'none';
                     setTimeout(() => {
                         window.location.href = '<?= BASE_URL ?>' + data.redirect;
@@ -475,11 +632,18 @@
                 localStorage.setItem(ATTEMPTS_KEY, usedAttempts.toString());
                 updateDots(usedAttempts);
 
-                let msg = '<i class="fas fa-exclamation-circle alert-icon"></i><span>' + (data.message || 'Invalid credentials.') + '</span>';
-                showAlert('error', msg);
+                // Highlight the specific bad field with its own message
+                if (data.field) {
+                    setFieldError(data.field, data.field_message || data.message || 'Invalid credentials.');
+                }
+
+                // Show the general attempts-remaining notice in the top alert
+                if (data.message) {
+                    showAlert('error', '<i class="fas fa-exclamation-circle alert-icon"></i><span>' + data.message + '</span>', true);
+                }
 
             } catch (err) {
-                showAlert('error', '<i class="fas fa-wifi alert-icon"></i><span>Connection error. Please try again.</span>');
+                showAlert('error', '<i class="fas fa-wifi alert-icon"></i><span>Connection error. Please try again.</span>', true);
             }
 
             loginBtn.classList.remove('loading');
