@@ -32,19 +32,11 @@ class AuthController extends Controller {
             return;
         }
 
-        $email    = InputValidator::validateEmail($_POST['email'] ?? '');
+        $rawEmail = $_POST['email'] ?? '';
+        $email    = InputValidator::validateEmail($rawEmail);
         $password = $_POST['password'] ?? '';
 
-        if (!$email || empty($password)) {
-            if ($this->isAjax()) {
-                $this->json(['success' => false, 'message' => 'Please enter valid credentials.']);
-                return;
-            }
-            $this->setFlash('error', 'Please enter valid credentials.');
-            $this->redirect('/auth/login');
-            return;
-        }
-
+        // Check lockout FIRST — applies to all failed attempts including bad format
         $ip = $_SERVER['REMOTE_ADDR'];
         $lockout = $this->checkLoginAttempts($ip);
         if ($lockout !== true) {
@@ -54,6 +46,39 @@ class AuthController extends Controller {
                 return;
             }
             $this->setFlash('error', $msg);
+            $this->redirect('/auth/login');
+            return;
+        }
+
+        // Invalid email format (e.g. missing @) — counts as a failed attempt
+        if (!$email && !empty($rawEmail)) {
+            $attemptsLeft = $this->logFailedAttempt($ip, $rawEmail);
+            if ($attemptsLeft === 0) {
+                $lockMsg = 'Too many failed attempts. Please wait 20 seconds before trying again.';
+                if ($this->isAjax()) {
+                    $this->json(['success' => false, 'field' => 'email', 'field_message' => 'No account found with this email.', 'message' => $lockMsg, 'locked' => true, 'retry_after' => 20, 'attempts_left' => 0], 429);
+                    return;
+                }
+                $this->setFlash('error', $lockMsg);
+                $this->redirect('/auth/login');
+                return;
+            }
+            $attemptsNotice = $attemptsLeft . ' attempt' . ($attemptsLeft === 1 ? '' : 's') . ' remaining.';
+            if ($this->isAjax()) {
+                $this->json(['success' => false, 'field' => 'email', 'field_message' => 'No account found with this email.', 'message' => $attemptsNotice, 'attempts_left' => $attemptsLeft]);
+                return;
+            }
+            $this->setFlash('error', 'No account found with this email. ' . $attemptsNotice);
+            $this->redirect('/auth/login');
+            return;
+        }
+
+        if (!$email || empty($password)) {
+            if ($this->isAjax()) {
+                $this->json(['success' => false, 'message' => 'Please enter valid credentials.']);
+                return;
+            }
+            $this->setFlash('error', 'Please enter valid credentials.');
             $this->redirect('/auth/login');
             return;
         }
@@ -117,28 +142,28 @@ class AuthController extends Controller {
         } else {
             $attemptsLeft = $this->logFailedAttempt($ip, $email);
 
-            
-            // Specific field hint (email not found vs wrong password)
+            // Specific field hint
             if (!$emailExists) {
-                $field    = 'email';
-                $fieldMsg = 'No account found with that email address.';
+                // Email not found — highlight email field, also highlight password
+                $field    = 'both';
+                $fieldMsg = 'Invalid email or password.';
             } else {
+                // Email found but wrong password
                 $field    = 'password';
                 $fieldMsg = 'Incorrect password. Please try again.';
             }
 
-
-            // General attempts-remaining notice shown separately, not tied to a field
+            // Always include attempts-remaining in the general notice
             if ($attemptsLeft !== null && $attemptsLeft > 0) {
-                $msg = $attemptsLeft . ' attempt' . ($attemptsLeft === 1 ? '' : 's') . ' remaining.';
+                $attemptsNotice = $attemptsLeft . ' attempt' . ($attemptsLeft === 1 ? '' : 's') . ' remaining.';
             } else {
-                $msg = $fieldMsg;
+                $attemptsNotice = '';
             }
 
             if ($attemptsLeft === 0) {
                 $lockMsg = 'Too many failed attempts. Please wait 20 seconds before trying again.';
                 if ($this->isAjax()) {
-                    $this->json(['success' => false, 'message' => $lockMsg, 'locked' => true, 'retry_after' => 20, 'attempts_left' => 0], 429);
+                    $this->json(['success' => false, 'message' => $lockMsg, 'field_message' => $fieldMsg, 'field' => $field, 'locked' => true, 'retry_after' => 20, 'attempts_left' => 0], 429);
                     return;
                 }
                 $this->setFlash('error', $lockMsg);
@@ -147,10 +172,10 @@ class AuthController extends Controller {
             }
 
             if ($this->isAjax()) {
-                $this->json(['success' => false, 'field_message' => $fieldMsg, 'message' => $msg, 'field' => $field, 'attempts_left' => $attemptsLeft]);
+                $this->json(['success' => false, 'field_message' => $fieldMsg, 'message' => $attemptsNotice, 'field' => $field, 'attempts_left' => $attemptsLeft]);
                 return;
             }
-            $this->setFlash('error', $msg);
+            $this->setFlash('error', $fieldMsg . ($attemptsNotice ? ' ' . $attemptsNotice : ''));
             $this->redirect('/auth/login');
         }
     }
