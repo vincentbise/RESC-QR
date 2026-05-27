@@ -1,7 +1,7 @@
 <div class="page-header">
     <div>
         <h1>Student Status</h1>
-        <p><?= $activeEvent ? e($activeEvent['event_type']) . ' — ' . date('M d, Y g:i A', strtotime($activeEvent['event_datetime'])) : 'No active event' ?></p>
+        <p><?= $activeEvent ? e($activeEvent['event_type']) . ' — ' . date('M d, Y g:i A', strtotime($activeEvent['event_datetime'])) : 'Class roster' ?></p>
     </div>
     <button class="btn btn-secondary btn-sm" onclick="refreshStudentList()">
         <i class="fas fa-sync-alt"></i> Refresh
@@ -23,7 +23,7 @@
     <div class="stat-card warning">
         <div class="stat-header"><div class="stat-icon"><i class="fas fa-user-slash"></i></div></div>
         <div class="stat-value" id="notInClassVal"><?= (int)($summary['not_in_class_count'] ?? 0) ?></div>
-        <div class="stat-label">Not in Class</div>
+        <div class="stat-label">Absent</div>
     </div>
 </div>
 <?php endif; ?>
@@ -41,6 +41,7 @@
             <button class="btn btn-sm btn-success status-filter active" data-filter="all">All</button>
             <button class="btn btn-sm btn-secondary status-filter" data-filter="Safe">Safe</button>
             <button class="btn btn-sm btn-secondary status-filter" data-filter="Not Yet Scanned">Not Yet Scanned</button>
+            <button class="btn btn-sm btn-secondary status-filter" data-filter="Absent">Absent</button>
         </div>
     </div>
     <div class="card-body" style="padding:0;">
@@ -56,11 +57,16 @@
                         <?php foreach ($students as $s): ?>
                         <?php
                             $status   = $s['status'];
-                            $badgeCls = $status === 'Safe' ? 'success' : ($status === 'Not Yet Scanned' ? 'danger' : 'warning');
+                            $badgeCls = $status === 'Safe'
+                                ? 'success'
+                                : ($status === 'Not Yet Scanned'
+                                    ? 'danger'
+                                    : ($status === 'Absent' ? 'warning' : 'info'));
                         ?>
                         <tr class="status-row"
                             data-status="<?= e($status) ?>"
-                            data-name="<?= e(strtolower($s['first_name'] . ' ' . $s['last_name'])) ?>">
+                            data-name="<?= e(strtolower($s['first_name'] . ' ' . $s['last_name'])) ?>"
+                            data-student-id="<?= (int)$s['student_id'] ?>">
                             <td>
                                 <div class="d-flex align-center gap-1">
                                     <div class="avatar avatar-sm" style="background:hsl(<?= $s['student_id'] * 37 % 360 ?>,60%,50%)">
@@ -73,11 +79,20 @@
                             <td><?= e($s['phone'] ?? '—') ?></td>
                             <td><span class="badge badge-<?= $badgeCls ?>"><?= e($status) ?></span></td>
                             <td>
-                                <?php if ($status === 'Not Yet Scanned' && !empty($s['phone'])): ?>
-                                    <a href="tel:<?= e($s['phone']) ?>" class="btn btn-sm btn-warning btn-icon" title="Call">
-                                        <i class="fas fa-phone"></i>
-                                    </a>
-                                <?php endif; ?>
+                                <div class="d-flex gap-1">
+                                    <?php if ($activeEvent && $status === 'Not Yet Scanned' && !empty($s['phone'])): ?>
+                                        <a href="tel:<?= e($s['phone']) ?>" class="btn btn-sm btn-warning btn-icon" title="Call">
+                                            <i class="fas fa-phone"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if (!$activeEvent && $status !== 'Absent'): ?>
+                                        <button class="btn btn-sm btn-danger btn-icon mark-absent"
+                                                data-student-id="<?= (int)$s['student_id'] ?>"
+                                                title="Mark Absent">
+                                            <i class="fas fa-user-slash"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -90,6 +105,7 @@
 
 <script>
 (function () {
+    let hasActiveEvent = <?= $activeEvent ? 'true' : 'false' ?>;
     function setActiveFilter(btn) {
         document.querySelectorAll('.status-filter').forEach(b => {
             b.classList.remove('active', 'btn-success');
@@ -138,18 +154,26 @@
             return;
         }
 
-        const badgeClass = s => s === 'Safe' ? 'success' : (s === 'Not Yet Scanned' ? 'danger' : 'warning');
+        const badgeClass = s => s === 'Safe'
+            ? 'success'
+            : (s === 'Not Yet Scanned'
+                ? 'danger'
+                : (s === 'Absent' ? 'warning' : 'info'));
 
         tbody.innerHTML = students.map(s => {
             const initials = (s.first_name[0] + s.last_name[0]).toUpperCase();
             const hue      = (s.student_id * 37) % 360;
             const phone    = s.phone ? App.escapeHtml(s.phone) : '';
-            const callBtn  = (s.status === 'Not Yet Scanned' && phone)
+            const callBtn  = (hasActiveEvent && s.status === 'Not Yet Scanned' && phone)
                 ? `<a href="tel:${phone}" class="btn btn-sm btn-warning btn-icon" title="Call"><i class="fas fa-phone"></i></a>`
+                : '';
+            const absentBtn = (!hasActiveEvent && s.status !== 'Absent')
+                ? `<button class="btn btn-sm btn-danger btn-icon mark-absent" data-student-id="${s.student_id}" title="Mark Absent"><i class="fas fa-user-slash"></i></button>`
                 : '';
             return `<tr class="status-row"
                         data-status="${App.escapeHtml(s.status)}"
-                        data-name="${App.escapeHtml((s.first_name + ' ' + s.last_name).toLowerCase())}">
+                        data-name="${App.escapeHtml((s.first_name + ' ' + s.last_name).toLowerCase())}"
+                        data-student-id="${s.student_id}">
                 <td>
                     <div class="d-flex align-center gap-1">
                         <div class="avatar avatar-sm" style="background:hsl(${hue},60%,50%)">${initials}</div>
@@ -159,7 +183,7 @@
                 <td><span class="badge badge-info">${App.escapeHtml(s.section_name)}</span></td>
                 <td>${phone || '—'}</td>
                 <td><span class="badge badge-${badgeClass(s.status)}">${App.escapeHtml(s.status)}</span></td>
-                <td>${callBtn}</td>
+                <td><div class="d-flex gap-1">${callBtn}${absentBtn}</div></td>
             </tr>`;
         }).join('');
 
@@ -170,6 +194,9 @@
         try {
             const data = await App.get('/scan/students');
             if (data.success) {
+                if (typeof data.active_event !== 'undefined') {
+                    hasActiveEvent = !!data.active_event;
+                }
                 updateStatCards(data.summary);
                 renderRows(data.students);
             }
@@ -177,6 +204,32 @@
             App.toast('Failed to refresh', 'error');
         }
     };
+
+    document.getElementById('statusBody').addEventListener('click', async (e) => {
+        const btn = e.target.closest('.mark-absent');
+        if (!btn) return;
+
+        const studentId = parseInt(btn.dataset.studentId);
+        if (!studentId) return;
+
+        const ok = await App.confirm('Mark this student as absent?');
+        if (!ok) return;
+
+        btn.disabled = true;
+        try {
+            const data = await App.post('/scan/absent', { student_id: studentId });
+            if (data.success) {
+                App.toast(data.message, 'success');
+                refreshStudentList();
+            } else {
+                App.toast(data.message || 'Failed to update status.', 'error');
+            }
+        } catch (err) {
+            App.toast(err.message || 'Failed to update status.', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    });
 
     setInterval(window.refreshStudentList, 10000);
 })();

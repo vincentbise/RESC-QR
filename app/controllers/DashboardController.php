@@ -62,7 +62,7 @@ class DashboardController extends Controller {
             "SELECT
                 COALESCE(SUM(ss.status='Safe'), 0) AS safe_count,
                 COALESCE(SUM(ss.status='Not Yet Scanned'), 0) AS missing_count,
-                COALESCE(SUM(ss.status='Not in class'), 0) AS not_in_class_count
+                COALESCE(SUM(ss.status='Absent'), 0) AS not_in_class_count
              FROM student_status ss
              JOIN emergency_event e ON ss.event_id = e.event_id
              WHERE e.status = 'Active'"

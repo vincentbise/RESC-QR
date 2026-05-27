@@ -107,13 +107,13 @@ CREATE TABLE IF NOT EXISTS `qr_scan_log` (
 
 -- ==========================================
 -- TABLE: student_status
--- Status values: Safe, Not Yet Scanned, Not in class
+-- Status values: Safe, Not Yet Scanned, Absent
 -- ==========================================
 CREATE TABLE IF NOT EXISTS `student_status` (
     `status_id` INT AUTO_INCREMENT PRIMARY KEY,
     `student_id` INT NOT NULL,
     `event_id` INT NOT NULL,
-    `status` ENUM('Safe','Not Yet Scanned','Not in class') NOT NULL DEFAULT 'Not Yet Scanned',
+    `status` ENUM('Safe','Not Yet Scanned','Absent') NOT NULL DEFAULT 'Not Yet Scanned',
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `uq_student_event` (`student_id`, `event_id`),
     FOREIGN KEY (`student_id`) REFERENCES `student`(`student_id`) ON DELETE CASCADE,
@@ -248,7 +248,7 @@ SELECT
     event_id,
     SUM(status = 'Safe') AS safe_count,
     SUM(status = 'Not Yet Scanned') AS missing_count,
-    SUM(status = 'Not in class') AS not_in_class_count,
+    SUM(status = 'Absent') AS not_in_class_count,
     COUNT(*) AS total_count
 FROM student_status
 GROUP BY event_id;

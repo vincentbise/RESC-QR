@@ -1,11 +1,48 @@
 
+<?php
+    $page = max(1, (int)($page ?? 1));
+    $totalPages = max(1, (int)($totalPages ?? 1));
+?>
 
 <div class="page-header">
     <div>
         <h1>QR Codes</h1>
         <p>View and manage student QR codes for emergency scanning</p>
     </div>
-    <div class="d-flex gap-1">
+    <div class="d-flex align-center gap-1">
+        <div class="pagination-inline" id="paginationTop">
+            <?php if ($totalPages > 1): ?>
+            <?php if ($page > 1): ?>
+                <a href="<?= baseUrl('qr?page=' . ($page - 1) . ($classId ? '&class_id=' . $classId : '')) ?>" class="page-btn" data-page="<?= $page - 1 ?>"><i class="fas fa-chevron-left"></i></a>
+            <?php else: ?>
+                <span class="page-btn disabled"><i class="fas fa-chevron-left"></i></span>
+            <?php endif; ?>
+
+            <?php
+            $startPage = max(1, $page - 2);
+            $endPage   = min($totalPages, $page + 2);
+            if ($startPage > 1): ?>
+                <a href="<?= baseUrl('qr?page=1' . ($classId ? '&class_id=' . $classId : '')) ?>" class="page-btn" data-page="1">1</a>
+                <?php if ($startPage > 2): ?><span class="page-btn ellipsis">&hellip;</span><?php endif; ?>
+            <?php endif; ?>
+
+            <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                <a href="<?= baseUrl('qr?page=' . $i . ($classId ? '&class_id=' . $classId : '')) ?>"
+                   class="page-btn <?= $i === $page ? 'active' : '' ?>" data-page="<?= $i ?>"><?= $i ?></a>
+            <?php endfor; ?>
+
+            <?php if ($endPage < $totalPages): ?>
+                <?php if ($endPage < $totalPages - 1): ?><span class="page-btn ellipsis">&hellip;</span><?php endif; ?>
+                <a href="<?= baseUrl('qr?page=' . $totalPages . ($classId ? '&class_id=' . $classId : '')) ?>" class="page-btn" data-page="<?= $totalPages ?>"><?= $totalPages ?></a>
+            <?php endif; ?>
+
+            <?php if ($page < $totalPages): ?>
+                <a href="<?= baseUrl('qr?page=' . ($page + 1) . ($classId ? '&class_id=' . $classId : '')) ?>" class="page-btn" data-page="<?= $page + 1 ?>"><i class="fas fa-chevron-right"></i></a>
+            <?php else: ?>
+                <span class="page-btn disabled"><i class="fas fa-chevron-right"></i></span>
+            <?php endif; ?>
+            <?php endif; ?>
+        </div>
         <select class="form-control" id="qrClassFilter" style="width:200px;padding:10px 12px;">
             <option value="">All Classes</option>
             <?php foreach ($classes as $c): ?>
@@ -54,6 +91,60 @@ document.getElementById('qrClassFilter').addEventListener('change', function() {
 </script>
 
 <style>
+/* ── Inline pagination ───────────────────────────────────── */
+.pagination-inline {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    user-select: none;
+    color: var(--text-secondary);
+    text-decoration: none;
+    background: transparent;
+    line-height: 1;
+}
+
+.page-btn:not(.disabled):not(.active):not(.ellipsis):hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+}
+
+.page-btn.active {
+    background: var(--accent-red);
+    color: #fff;
+    font-weight: 700;
+    cursor: default;
+    border-color: var(--accent-red);
+}
+
+.page-btn.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.page-btn.ellipsis {
+    cursor: default;
+    border: none;
+    pointer-events: none;
+    color: var(--text-muted);
+}
+
 @media print {
     .sidebar, .topbar, .page-header, #qrClassFilter { display:none !important; }
     .main-content { margin-left:0 !important; }

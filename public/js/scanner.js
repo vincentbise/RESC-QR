@@ -175,6 +175,16 @@ async function processScan(qrCode) {
                 '</div>';
             addToHistory(data.student.name, 'Valid');
 
+        } else if (data.absent) {
+            var absentMessage = data.message || 'Invalid scan: student is marked as Absent.';
+            resultDiv.innerHTML =
+                '<div class="scan-fail">' +
+                    '<i class="fas fa-times-circle" style="display:block;"></i>' +
+                    '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">Invalid Scan</div>' +
+                    '<div class="text-muted">' + App.escapeHtml(absentMessage) + '</div>' +
+                '</div>';
+            addToHistory(qrCode, 'Invalid');
+
         } else if (data.already_safe) {
             resultDiv.innerHTML =
                 '<div class="scan-duplicate">' +

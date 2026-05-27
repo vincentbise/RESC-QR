@@ -6,6 +6,7 @@ class ScanController extends Controller {
     private $scanLogModel;
     private $statusModel;
     private $eventModel;
+    private $attendanceModel;
 
     public function __construct() {
         $this->requireAuth(['mayor', 'admin']);
@@ -13,6 +14,7 @@ class ScanController extends Controller {
         $this->scanLogModel = $this->model('QRScanLog');
         $this->statusModel  = $this->model('StudentStatus');
         $this->eventModel   = $this->model('EmergencyEvent');
+        $this->attendanceModel = $this->model('Attendance');
     }
 
     public function index() {
@@ -66,6 +68,21 @@ class ScanController extends Controller {
         }
 
         $currentStatus = $this->statusModel->getStudentStatus($student['student_id'], $activeEvent['event_id']);
+        if ($currentStatus && $currentStatus['status'] === 'Absent') {
+            $this->scanLogModel->logScan($student['student_id'], $activeEvent['event_id'], getUserId(), 'Invalid');
+            $this->json([
+                'success'     => false,
+                'absent'      => true,
+                'message'     => 'Invalid scan: ' . $student['first_name'] . ' ' . $student['last_name'] . ' is marked as Absent.',
+                'scan_result' => 'Invalid',
+                'student'     => [
+                    'id'      => $student['student_id'],
+                    'name'    => $student['first_name'] . ' ' . $student['last_name'],
+                    'section' => $student['section_name'],
+                ]
+            ]);
+            return;
+        }
         if ($currentStatus && $currentStatus['status'] === 'Safe') {
             $this->json([
                 'success'     => false,
@@ -107,10 +124,32 @@ class ScanController extends Controller {
         if ($activeEvent) {
             $students = $this->statusModel->getStatusesByEvent($activeEvent['event_id'], $classId);
             $summary  = $this->statusModel->getSummary($activeEvent['event_id'], $classId);
+        } else {
+            $students = $this->studentModel->getAll('', $classId);
+            $attendanceMap = $this->attendanceModel->getStatusMapByClassAndDate($classId, date('Y-m-d'));
+            $absentCount = 0;
+            foreach ($students as &$student) {
+                if (($attendanceMap[$student['student_id']] ?? null) === 'Absent') {
+                    $student['status'] = 'Absent';
+                    $absentCount++;
+                } else {
+                    $student['status'] = 'Safe';
+                }
+            }
+            unset($student);
+            $summary['safe_count'] = count($students) - $absentCount;
+            $summary['missing_count'] = 0;
+            $summary['not_in_class_count'] = $absentCount;
+            $summary['total'] = count($students);
         }
 
         if ($this->isAjax()) {
-            $this->json(['success' => true, 'students' => array_values($students), 'summary' => $summary]);
+            $this->json([
+                'success'      => true,
+                'students'     => array_values($students),
+                'summary'      => $summary,
+                'active_event' => (bool)$activeEvent,
+            ]);
             return;
         }
 
@@ -135,5 +174,52 @@ class ScanController extends Controller {
         $this->view('layouts/header', $data);
         $this->view('mayor/hotlines', $data);
         $this->view('layouts/footer', $data);
+    }
+
+    public function absent() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Invalid method'], 405);
+            return;
+        }
+
+        $input = $this->getJsonInput();
+        $studentId = InputValidator::validateId($input['student_id'] ?? null);
+        if (!$studentId) {
+            $this->json(['success' => false, 'message' => 'Invalid student ID.'], 400);
+            return;
+        }
+
+        $activeEvent = $this->eventModel->getActiveEvent();
+        if ($activeEvent) {
+            $this->json(['success' => false, 'message' => 'Cannot mark absent during an active event.'], 400);
+            return;
+        }
+
+        $student = $this->studentModel->findStudentById($studentId);
+        if (!$student) {
+            $this->json(['success' => false, 'message' => 'Student not found.'], 404);
+            return;
+        }
+
+        $mayorClassId = $_SESSION['class_id'] ?? null;
+        if ($mayorClassId && $student['class_id'] != $mayorClassId) {
+            $this->json(['success' => false, 'message' => 'Student is not in your class.'], 403);
+            return;
+        }
+
+        $this->attendanceModel->markAttendance(
+            $studentId,
+            $student['class_id'],
+            date('Y-m-d'),
+            'Absent',
+            getUserId()
+        );
+
+        $this->json([
+            'success'    => true,
+            'message'    => $student['first_name'] . ' ' . $student['last_name'] . ' marked as Absent.',
+            'student_id' => $studentId,
+            'status'     => 'Absent',
+        ]);
     }
 }

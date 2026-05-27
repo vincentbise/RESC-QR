@@ -32,4 +32,24 @@ class Attendance extends Model {
             'recorded_by' => $recordedBy,
         ]);
     }
+
+    public function getStatusMapByClassAndDate($classId, $date) {
+        $sql = "SELECT a.student_id, a.status
+                FROM attendance a
+                JOIN student s ON a.student_id = s.student_id
+                WHERE a.date = :date";
+        $params = [':date' => $date];
+
+        if ($classId) {
+            $sql .= " AND s.class_id = :class_id";
+            $params[':class_id'] = $classId;
+        }
+
+        $stmt = $this->query($sql, $params);
+        $map = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $map[(int)$row['student_id']] = $row['status'];
+        }
+        return $map;
+    }
 }

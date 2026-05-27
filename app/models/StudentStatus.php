@@ -56,7 +56,7 @@ class StudentStatus extends Model {
         $sql = "SELECT
                     COALESCE(SUM(ss.status='Safe'),0) as safe_count,
                     COALESCE(SUM(ss.status='Not Yet Scanned'),0) as missing_count,
-                    COALESCE(SUM(ss.status='Not in class'),0) as not_in_class_count,
+                    COALESCE(SUM(ss.status='Absent'),0) as not_in_class_count,
                     COUNT(*) as total
                 FROM student_status ss
                 JOIN student s ON ss.student_id = s.student_id

@@ -14,11 +14,11 @@ USE `resc_qr`;
 -- ============================================================
 -- Check if 'Not Yet Scanned' already exists in ENUM
 -- ALTER TABLE `student_status`
---   MODIFY COLUMN `status` ENUM('Safe', 'Missing', 'Not Yet Scanned', 'Not in class')
+--   MODIFY COLUMN `status` ENUM('Safe', 'Missing', 'Not Yet Scanned', 'Absent')
 --   NOT NULL DEFAULT 'Not Yet Scanned';
 -- UPDATE `student_status` SET `status` = 'Not Yet Scanned' WHERE `status` = 'Missing';
 -- ALTER TABLE `student_status`
---   MODIFY COLUMN `status` ENUM('Safe', 'Not Yet Scanned', 'Not in class')
+--   MODIFY COLUMN `status` ENUM('Safe', 'Not Yet Scanned', 'Absent')
 --   NOT NULL DEFAULT 'Not Yet Scanned';
 
 -- ============================================================

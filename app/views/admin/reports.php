@@ -263,7 +263,7 @@ function printReport(r) {
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;">${pct(missing)}</td>
                 </tr>
                 <tr>
-                    <td style="padding:10px 14px;border:1px solid #ddd;font-weight:600;color:#d97706;">— Not in Class</td>
+                    <td style="padding:10px 14px;border:1px solid #ddd;font-weight:600;color:#d97706;">— Absent</td>
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;font-weight:700;">${notInClass}</td>
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;">${pct(notInClass)}</td>
                 </tr>
