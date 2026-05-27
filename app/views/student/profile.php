@@ -18,14 +18,6 @@
 
         <div style="display:flex;gap:16px;margin-bottom:24px;">
             <div style="flex:1;background:var(--bg-secondary);border-radius:8px;padding:12px 16px;">
-                <div class="text-muted" style="font-size:12px;margin-bottom:4px;">Student ID</div>
-                <div style="font-weight:700;font-size:15px;">#<?= e($student['student_id'] ?? '') ?></div>
-            </div>
-            <div style="flex:1;background:var(--bg-secondary);border-radius:8px;padding:12px 16px;">
-                <div class="text-muted" style="font-size:12px;margin-bottom:4px;">Status</div>
-                <div><span class="badge badge-<?= ($student['profile_status'] ?? '') === 'Active' ? 'success' : 'danger' ?>"><?= e($student['profile_status'] ?? '') ?></span></div>
-            </div>
-            <div style="flex:1;background:var(--bg-secondary);border-radius:8px;padding:12px 16px;">
                 <div class="text-muted" style="font-size:12px;margin-bottom:4px;">Registered</div>
                 <div style="font-size:13px;font-weight:600;"><?= date('M d, Y', strtotime($student['created_at'] ?? 'now')) ?></div>
             </div>
@@ -137,12 +129,10 @@ document.getElementById('editProfileForm').addEventListener('submit', async (e) 
         if (data.success) {
             App.toast(data.message, 'success');
 
-            // Sync originalValues so cancel reflects the newly saved state
             document.querySelectorAll('#editProfileForm input:not([disabled]), #editProfileForm select').forEach(el => {
                 originalValues[el.name] = el.value;
             });
 
-            // Update avatar & header live
             const firstName = formData.get('first_name').trim();
             const lastName  = formData.get('last_name').trim();
             const course    = formData.get('course');
