@@ -90,7 +90,6 @@
 
 <script>
 (function () {
-    // ── Filter buttons ────────────────────────────────────────────
     function setActiveFilter(btn) {
         document.querySelectorAll('.status-filter').forEach(b => {
             b.classList.remove('active', 'btn-success');
@@ -107,7 +106,6 @@
         });
     });
 
-    // ── Live search ───────────────────────────────────────────────
     document.getElementById('statusSearch').addEventListener('input', App.debounce(applyFilters, 150));
 
     function applyFilters() {
@@ -122,11 +120,8 @@
         });
     }
 
-    // Run filters immediately on page load so the active "All" button
-    // state is applied and rows are correctly visible from the start
     applyFilters();
 
-    // ── Update stat cards safely (they only exist when event is active) ──
     function updateStatCards(summary) {
         const safeEl     = document.getElementById('safeVal');
         const missingEl  = document.getElementById('missingVal');
@@ -136,7 +131,6 @@
         if (notInClsEl) notInClsEl.textContent = summary.not_in_class_count ?? 0;
     }
 
-    // ── Render rows (called after refresh) ───────────────────────
     function renderRows(students) {
         const tbody = document.getElementById('statusBody');
         if (!students || !students.length) {
@@ -169,11 +163,9 @@
             </tr>`;
         }).join('');
 
-        // Re-apply current search/filter after re-render
         applyFilters();
     }
 
-    // ── Live refresh ──────────────────────────────────────────────
     window.refreshStudentList = async function () {
         try {
             const data = await App.get('/scan/students');

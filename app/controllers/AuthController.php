@@ -36,7 +36,6 @@ class AuthController extends Controller {
         $email    = InputValidator::validateEmail($rawEmail);
         $password = $_POST['password'] ?? '';
 
-        // Check lockout FIRST — applies to all failed attempts including bad format
         $ip = $_SERVER['REMOTE_ADDR'];
         $lockout = $this->checkLoginAttempts($ip);
         if ($lockout !== true) {
@@ -50,7 +49,6 @@ class AuthController extends Controller {
             return;
         }
 
-        // Invalid email format (e.g. missing @) — counts as a failed attempt
         if (!$email && !empty($rawEmail)) {
             $attemptsLeft = $this->logFailedAttempt($ip, $rawEmail);
             if ($attemptsLeft === 0) {
@@ -86,7 +84,7 @@ class AuthController extends Controller {
         $userId       = null;
         $userName     = null;
         $userRole     = null;
-        $emailExists  = false;   // tracks whether the email was found at all
+        $emailExists  = false;
 
         $admin = $this->adminModel->findByEmail($email);
         if ($admin) {
@@ -142,18 +140,14 @@ class AuthController extends Controller {
         } else {
             $attemptsLeft = $this->logFailedAttempt($ip, $email);
 
-            // Specific field hint
             if (!$emailExists) {
-                // Email not found — highlight email field, also highlight password
                 $field    = 'both';
                 $fieldMsg = 'Invalid email or password.';
             } else {
-                // Email found but wrong password
                 $field    = 'password';
                 $fieldMsg = 'Incorrect password. Please try again.';
             }
 
-            // Always include attempts-remaining in the general notice
             if ($attemptsLeft !== null && $attemptsLeft > 0) {
                 $attemptsNotice = $attemptsLeft . ' attempt' . ($attemptsLeft === 1 ? '' : 's') . ' remaining.';
             } else {

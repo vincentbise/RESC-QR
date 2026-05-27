@@ -55,7 +55,6 @@ class ScanController extends Controller {
             return;
         }
 
-        // Ensure mayor can only scan students from their own class
         $mayorClassId = $_SESSION['class_id'] ?? null;
         if ($mayorClassId && $student['class_id'] != $mayorClassId) {
             $this->json([
@@ -66,7 +65,6 @@ class ScanController extends Controller {
             return;
         }
 
-        // Block duplicate scans — already Safe
         $currentStatus = $this->statusModel->getStudentStatus($student['student_id'], $activeEvent['event_id']);
         if ($currentStatus && $currentStatus['status'] === 'Safe') {
             $this->json([

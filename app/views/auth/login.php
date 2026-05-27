@@ -298,7 +298,6 @@
             border-color: var(--accent-red);
         }
 
-        /* Countdown lockout box */
         .lockout-box {
             display: none;
             text-align: center;
@@ -350,7 +349,6 @@
 
             <div id="ajax-alert" class="alert-box" style="display:none;"></div>
 
-            <!-- Lockout countdown -->
             <div class="lockout-box" id="lockoutBox">
                 <i class="fas fa-lock"></i>
                 <span class="countdown-num" id="countdownNum">20</span>
@@ -428,7 +426,6 @@
         let countdownTimer = null;
         let usedAttempts   = parseInt(localStorage.getItem(ATTEMPTS_KEY) || '0', 10);
 
-        /* ── Show / hide password toggle ── */
         toggleBtn.addEventListener('click', () => {
             const isPassword = passInput.type === 'password';
             passInput.type = isPassword ? 'text' : 'password';
@@ -436,7 +433,6 @@
             toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
         });
 
-        /* ── Clear field errors when user starts typing ── */
         emailInput.addEventListener('input', () => clearFieldError('email'));
         passInput.addEventListener('input',  () => clearFieldError('password'));
 
@@ -560,7 +556,6 @@
             showAlert('success', '<i class="fas fa-check-circle alert-icon"></i><span>You can try again now.</span>', true);
         }
 
-        // On page load: check if still locked
         function checkExistingLockout() {
             const lockUntil = parseInt(localStorage.getItem(LOCKOUT_KEY) || '0', 10);
             if (lockUntil > Date.now()) {
@@ -579,7 +574,6 @@
 
         checkExistingLockout();
 
-        // Auto-dismiss the server-rendered flash message after 3 seconds
         function dismissEl(el) {
             if (!el) return;
             el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
@@ -622,13 +616,11 @@
                     return;
                 }
 
-                // Update dots first regardless of lock state
                 usedAttempts = MAX_ATTEMPTS - (data.attempts_left ?? 0);
                 localStorage.setItem(ATTEMPTS_KEY, usedAttempts.toString());
                 updateDots(usedAttempts);
 
                 if (data.locked && data.retry_after) {
-                    // Show the field error briefly so the user knows why, then lock
                     if (data.field === 'both') {
                         emailInput.classList.add('field-error');
                         passInput.classList.add('field-error');
@@ -646,15 +638,12 @@
                 }
 
                 if (data.field === 'both') {
-                    // Both email and password are wrong
                     emailInput.classList.add('field-error');
                     passInput.classList.add('field-error');
-                    // Show field message + attempts remaining together in the alert
                     const bothMsg = (data.field_message || 'Incorrect email and password.')
                                   + (data.message ? ' ' + data.message : '');
                     showAlert('error', '<i class="fas fa-exclamation-circle alert-icon"></i><span>' + bothMsg + '</span>', true);
                 } else if (data.field) {
-                    // One field wrong — inline error under field, attempts notice in alert
                     setFieldError(data.field, data.field_message || 'Invalid credentials.');
                     const notice = data.message || '';
                     if (notice) {
