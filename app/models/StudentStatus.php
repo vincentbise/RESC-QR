@@ -22,7 +22,7 @@ class StudentStatus extends Model {
 
     public function getStatusesByEvent($eventId, $classId = null) {
         $sql = "SELECT ss.*, s.first_name, s.last_name, s.phone, s.email, s.qr_code_value,
-                       s.class_id, c.section_name, c.program
+                       s.class_id, s.profile_image, c.section_name, c.program
                 FROM student_status ss
                 JOIN student s ON ss.student_id = s.student_id
                 JOIN class c ON s.class_id = c.class_id

@@ -84,6 +84,7 @@ class AuthController extends Controller {
         $userId       = null;
         $userName     = null;
         $userRole     = null;
+        $userAvatar   = null;
         $emailExists  = false;
 
         $admin = $this->adminModel->findByEmail($email);
@@ -121,6 +122,7 @@ class AuthController extends Controller {
                     $userId   = $student['student_id'];
                     $userName = $student['first_name'] . ' ' . $student['last_name'];
                     $userRole = 'student';
+                    $userAvatar = $student['profile_image'] ?? null;
                 }
             }
         }
@@ -131,6 +133,7 @@ class AuthController extends Controller {
             $_SESSION['user_id']   = $userId;
             $_SESSION['user_role'] = $userRole;
             $_SESSION['user_name'] = $userName;
+            $_SESSION['user_avatar'] = $userAvatar ?? null;
 
             if ($this->isAjax()) {
                 $this->json(['success' => true, 'role' => $userRole, 'redirect' => $this->getRoleRedirect($userRole)]);

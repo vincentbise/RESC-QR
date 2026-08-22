@@ -44,4 +44,56 @@ class InputValidator {
         $qrValue = trim($qrValue ?? '');
         return preg_match('/^[A-Za-z0-9\-_]{5,255}$/', $qrValue) ? $qrValue : false;
     }
+
+    /**
+     * Validates an uploaded image ($_FILES entry) and moves it into $destDir.
+     * Returns the stored filename on success, or an array ['error' => message] on failure.
+     */
+    public static function handleImageUpload($file, $destDir, $maxBytes = 3145728) {
+        if (!isset($file) || !is_array($file) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+            return null; // nothing uploaded, not an error
+        }
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return ['error' => 'Upload failed. Please try again.'];
+        }
+
+        if (!is_uploaded_file($file['tmp_name'])) {
+            return ['error' => 'Invalid upload.'];
+        }
+
+        if ($file['size'] > $maxBytes) {
+            return ['error' => 'Image is too large. Maximum size is ' . round($maxBytes / 1048576, 1) . 'MB.'];
+        }
+
+        $imageInfo = @getimagesize($file['tmp_name']);
+        if ($imageInfo === false) {
+            return ['error' => 'The uploaded file is not a valid image.'];
+        }
+
+        $allowedMimes = [
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+        ];
+        $mime = $imageInfo['mime'];
+        if (!isset($allowedMimes[$mime])) {
+            return ['error' => 'Only JPG, PNG, WEBP, or GIF images are allowed.'];
+        }
+
+        if (!is_dir($destDir)) {
+            @mkdir($destDir, 0755, true);
+        }
+
+        $ext = $allowedMimes[$mime];
+        $filename = 'img_' . bin2hex(random_bytes(16)) . '.' . $ext;
+        $destPath = rtrim($destDir, '/') . '/' . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+            return ['error' => 'Failed to save the uploaded image.'];
+        }
+
+        return $filename;
+    }
 }
