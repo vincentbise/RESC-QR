@@ -75,6 +75,10 @@ class StudentViewController extends Controller {
 
         $id = getUserId();
 
+        require_once ROOT_PATH . '/app/models/Student.php';
+        $studentModel = new Student();
+        $currentStudent = $studentModel->findStudentById($id);
+
         $data = [];
         if (isset($_POST['first_name'])) $data['first_name'] = InputValidator::validateName($_POST['first_name']);
         if (isset($_POST['last_name']))  $data['last_name']  = InputValidator::validateName($_POST['last_name']);
@@ -94,9 +98,48 @@ class StudentViewController extends Controller {
 
         $data = array_filter($data, fn($v) => $v !== false && $v !== null);
 
-        require_once ROOT_PATH . '/app/models/Student.php';
-        $studentModel = new Student();
+        $profileImagesDir = ROOT_PATH . '/public/img/profiles';
+        $oldImage = $currentStudent['profile_image'] ?? null;
+
+        // Handle photo removal
+        if (!empty($_POST['remove_profile_image'])) {
+            $data['profile_image'] = null;
+            if ($oldImage && is_file($profileImagesDir . '/' . basename($oldImage))) {
+                @unlink($profileImagesDir . '/' . basename($oldImage));
+            }
+            $oldImage = null; // already handled, don't delete again below
+        }
+
+        // Handle new photo upload
+        if (!empty($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $result = InputValidator::handleImageUpload($_FILES['profile_image'], $profileImagesDir);
+
+            if (is_array($result) && isset($result['error'])) {
+                if ($this->isAjax()) {
+                    $this->json(['success' => false, 'message' => $result['error']], 422);
+                    return;
+                }
+                $this->setFlash('error', $result['error']);
+                $this->redirect('/studentview/profile');
+                return;
+            }
+
+            if ($result) {
+                $data['profile_image'] = $result;
+                if ($oldImage && is_file($profileImagesDir . '/' . basename($oldImage))) {
+                    @unlink($profileImagesDir . '/' . basename($oldImage));
+                }
+            }
+        }
+
         $studentModel->updateStudent($id, $data);
+
+        if (array_key_exists('profile_image', $data)) {
+            $_SESSION['user_avatar'] = $data['profile_image'];
+        }
+        if (isset($data['first_name']) || isset($data['last_name'])) {
+            $_SESSION['user_name'] = ($data['first_name'] ?? $currentStudent['first_name']) . ' ' . ($data['last_name'] ?? $currentStudent['last_name']);
+        }
 
         if ($this->isAjax()) {
             $student = $studentModel->findStudentById($id);

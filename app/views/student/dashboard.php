@@ -39,6 +39,18 @@ $labelColor      = $isSafe ? 'var(--accent-success)' : ($isNotYetScanned ? 'var(
     <div class="card">
         <div class="card-header"><h3><i class="fas fa-user"></i> My Info</h3></div>
         <div class="card-body">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <div class="avatar" style="width:56px;height:56px;font-size:20px;background:linear-gradient(135deg,var(--accent-primary),var(--accent-secondary));overflow:hidden;">
+                    <?php if (!empty($student['profile_image'])): ?>
+                        <img src="<?= e(publicUrl('img/profiles/' . $student['profile_image'])) ?>" alt="Profile photo" style="width:100%;height:100%;object-fit:cover;">
+                    <?php else: ?>
+                        <?= strtoupper(substr($student['first_name'] ?? '',0,1) . substr($student['last_name'] ?? '',0,1)) ?>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <div style="font-weight:800;font-size:16px;"><?= e(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')) ?></div>
+                </div>
+            </div>
             <table style="width:100%;">
                 <tr><td class="text-muted" style="padding:8px 0;width:120px;">Name</td><td style="padding:8px 0;"><strong><?= e(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')) ?></strong></td></tr>
                 <tr><td class="text-muted" style="padding:8px 0;">Course</td><td style="padding:8px 0;"><?= e($student['course'] ?? '') ?></td></tr>

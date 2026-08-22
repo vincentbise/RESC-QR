@@ -83,8 +83,12 @@
                         <tr id="student-row-<?= $s['student_id'] ?>">
                             <td>
                                 <div class="d-flex align-center gap-1">
-                                    <div class="avatar avatar-sm" style="background:hsl(<?= $s['student_id'] * 37 % 360 ?>,60%,50%)">
-                                        <?= strtoupper(substr($s['first_name'],0,1) . substr($s['last_name'],0,1)) ?>
+                                    <div class="avatar avatar-sm" style="background:hsl(<?= $s['student_id'] * 37 % 360 ?>,60%,50%);overflow:hidden;">
+                                        <?php if (!empty($s['profile_image'])): ?>
+                                            <img src="<?= e(publicUrl('img/profiles/' . $s['profile_image'])) ?>" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                        <?php else: ?>
+                                            <?= strtoupper(substr($s['first_name'],0,1) . substr($s['last_name'],0,1)) ?>
+                                        <?php endif; ?>
                                     </div>
                                     <div>
                                         <strong><?= e($s['first_name'] . ' ' . $s['last_name']) ?></strong>
@@ -253,10 +257,13 @@
         tbody.innerHTML = students.map(s => {
             const initials = (s.first_name[0] + s.last_name[0]).toUpperCase();
             const hue      = (s.student_id * 37) % 360;
+            const avatarInner = s.profile_image
+                ? `<img src="${BASE_URL}/public/img/profiles/${encodeURIComponent(s.profile_image)}" alt="" style="width:100%;height:100%;object-fit:cover;">`
+                : initials;
             return `<tr id="student-row-${s.student_id}">
                 <td>
                     <div class="d-flex align-center gap-1">
-                        <div class="avatar avatar-sm" style="background:hsl(${hue},60%,50%)">${initials}</div>
+                        <div class="avatar avatar-sm" style="background:hsl(${hue},60%,50%);overflow:hidden;">${avatarInner}</div>
                         <div><strong>${App.escapeHtml(s.first_name + ' ' + s.last_name)}</strong></div>
                     </div>
                 </td>

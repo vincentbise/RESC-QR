@@ -76,9 +76,15 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
 
     <div class="sidebar-footer">
         <div class="user-card">
-            <div class="user-avatar"><?= $initials ?></div>
+            <div class="user-avatar" id="sidebarUserAvatar"style="overflow:hidden;">
+                <?php if ($role === 'student' && getUserAvatar()): ?>
+                    <img src="<?= e(publicUrl('img/profiles/' . getUserAvatar())) ?>" alt="Profile photo" style="width:100%;height:100%;object-fit:cover;">
+                <?php else: ?>
+                    <?= $initials ?>
+                <?php endif; ?>
+            </div>
             <div class="user-info">
-                <div class="name"><?= e(getUserName()) ?></div>
+                <div class="name" id="sidebarUserName"><?= e(getUserName()) ?></div>
                 <div class="role"><?= e(getUserRole()) ?></div>
             </div>
             <a href="<?= baseUrl('auth/logout') ?>" title="Logout" style="color:var(--text-muted);font-size:14px;">
