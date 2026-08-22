@@ -34,7 +34,7 @@
         </div>
         <div class="topbar-right">
             
-            <a href="<?= baseUrl('auth/logout') ?>" class="topbar-btn" title="Logout">
+            <a href="<?= baseUrl('auth/logout') ?> title="Logout">
                 <i class="fas fa-sign-out-alt"></i>
             </a>
         </div>
