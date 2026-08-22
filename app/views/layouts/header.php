@@ -33,13 +33,12 @@
             <span class="page-title"><?= e($pageTitle ?? 'Dashboard') ?></span>
         </div>
         <div class="topbar-right">
-            
-            <a href="<?= baseUrl('auth/logout') ?> title="Logout">
-                <i class="fas fa-sign-out-alt"></i>
-            </a>
+         <a href="<?= baseUrl('auth/logout') ?>" class="topbar-btn" title="Logout">
+          <i class="fas fa-sign-out-alt"></i>
+         </a>
         </div>
     </div>
-
+    
     <div class="page-content">
         <?php $flash = getFlash(); if ($flash): ?>
             <div class="alert alert-<?= e($flash['type']) ?>" id="flashAlert">
