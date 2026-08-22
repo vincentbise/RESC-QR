@@ -33,10 +33,6 @@
             <span class="page-title"><?= e($pageTitle ?? 'Dashboard') ?></span>
         </div>
         <div class="topbar-right">
-            <button class="topbar-btn" title="Notifications" id="notifBtn">
-                <i class="fas fa-bell"></i>
-                <span class="badge-dot" id="notifDot" style="display:none;"></span>
-            </button>
             <a href="<?= baseUrl('auth/logout') ?>" class="topbar-btn" title="Logout">
                 <i class="fas fa-sign-out-alt"></i>
             </a>
