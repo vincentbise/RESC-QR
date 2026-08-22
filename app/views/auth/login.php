@@ -234,6 +234,21 @@
         .btn-login.loading .spinner { display: inline-block; }
         .btn-login.loading .btn-text { display: none; }
 
+        .auth-links {
+            margin-top: 14px;
+            text-align: right;
+        }
+
+        .auth-links a {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .auth-links a:hover {
+            color: #fff;
+        }
+
         .alert-box {
             padding: 12px 16px;
             border-radius: 10px;
@@ -389,6 +404,10 @@
                     <span class="btn-text">Sign In</span>
                     <span class="spinner"><i class="fas fa-circle-notch fa-spin"></i> Signing in...</span>
                 </button>
+
+                <div class="auth-links">
+                    <a href="<?= baseUrl('auth/forgotPassword') ?>">Forgot Password?</a>
+                </div>
             </form>
 
             <div class="attempt-indicator" id="attemptIndicator" style="display:none;">

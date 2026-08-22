@@ -13,6 +13,10 @@ class ClassMayor extends Model {
         return $stmt->fetch();
     }
 
+    public function updatePasswordHash($mayorId, $passwordHash) {
+        return $this->update('class_mayor', ['password_hash' => $passwordHash], 'mayor_id', $mayorId);
+    }
+
     public function findByIdMayor($id) {
         return $this->findById('class_mayor', 'mayor_id', $id);
     }

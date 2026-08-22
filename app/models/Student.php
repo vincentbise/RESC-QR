@@ -86,6 +86,18 @@ class Student extends Model {
         return $stmt->fetch();
     }
 
+    public function findActiveByEmail($email) {
+        $stmt = $this->query(
+            "SELECT * FROM student WHERE email = :email AND profile_status = 'Active' LIMIT 1",
+            [':email' => $email]
+        );
+        return $stmt->fetch();
+    }
+
+    public function updatePasswordHash($studentId, $passwordHash) {
+        return $this->update('student', ['password_hash' => $passwordHash], 'student_id', $studentId);
+    }
+
     public function create($data) {
         $qrCode = 'RESC-STU-' . str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT) . '-' . time();
         $defaultPassword = password_hash('Student@123', PASSWORD_BCRYPT, ['cost' => 12]);

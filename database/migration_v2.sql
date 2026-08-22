@@ -22,7 +22,34 @@ USE `resc_qr`;
 --   NOT NULL DEFAULT 'Not Yet Scanned';
 
 -- ============================================================
--- 2. NEW VIEWS (if they don't exist)
+-- 2. FORGOT/RESET PASSWORD TABLES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `password_reset_attempts` (
+    `attempt_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `email` VARCHAR(150) NOT NULL,
+    `ip_address` VARCHAR(45) NOT NULL,
+    `attempt_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_reset_attempt_ip_time` (`ip_address`, `attempt_time`),
+    INDEX `idx_reset_attempt_email_time` (`email`, `attempt_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
+    `reset_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_type` ENUM('admin','mayor','student') NOT NULL,
+    `user_id` INT NOT NULL,
+    `email` VARCHAR(150) NOT NULL,
+    `token_hash` CHAR(64) NOT NULL,
+    `request_ip` VARCHAR(45) DEFAULT NULL,
+    `expires_at` DATETIME NOT NULL,
+    `used_at` DATETIME DEFAULT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_reset_token_hash` (`token_hash`),
+    INDEX `idx_reset_user_active` (`user_type`, `user_id`, `used_at`, `expires_at`),
+    INDEX `idx_reset_expiry` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- 3. NEW VIEWS (if they don't exist)
 -- ============================================================
 
 -- vw_student_full_status: student + latest status + class + emergency contact
@@ -141,7 +168,7 @@ LEFT JOIN `attendance` att ON s.`student_id` = att.`student_id`
 GROUP BY c.`class_id`, c.`section_name`, c.`program`, c.`year_level`;
 
 -- ============================================================
--- 3. NEW STORED PROCEDURES (all read from views)
+-- 4. NEW STORED PROCEDURES (all read from views)
 -- ============================================================
 DELIMITER $$
 
@@ -421,7 +448,7 @@ END$$
 DELIMITER ;
 
 -- ============================================================
--- 4. NEW STORED FUNCTIONS
+-- 5. NEW STORED FUNCTIONS
 -- ============================================================
 DELIMITER $$
 
@@ -503,7 +530,7 @@ END$$
 DELIMITER ;
 
 -- ============================================================
--- 5. NEW TRIGGERS
+-- 6. NEW TRIGGERS
 -- ============================================================
 DELIMITER $$
 
