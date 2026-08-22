@@ -196,6 +196,36 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ==========================================
+-- TABLE: password_reset_attempts (rate limiting)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS `password_reset_attempts` (
+    `attempt_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `email` VARCHAR(150) NOT NULL,
+    `ip_address` VARCHAR(45) NOT NULL,
+    `attempt_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_reset_attempt_ip_time` (`ip_address`, `attempt_time`),
+    INDEX `idx_reset_attempt_email_time` (`email`, `attempt_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ==========================================
+-- TABLE: password_reset_tokens
+-- ==========================================
+CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
+    `reset_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_type` ENUM('admin','mayor','student') NOT NULL,
+    `user_id` INT NOT NULL,
+    `email` VARCHAR(150) NOT NULL,
+    `token_hash` CHAR(64) NOT NULL,
+    `request_ip` VARCHAR(45) DEFAULT NULL,
+    `expires_at` DATETIME NOT NULL,
+    `used_at` DATETIME DEFAULT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_reset_token_hash` (`token_hash`),
+    INDEX `idx_reset_user_active` (`user_type`, `user_id`, `used_at`, `expires_at`),
+    INDEX `idx_reset_expiry` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ==========================================
 -- TABLE: activity_log (audit trail)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS `activity_log` (

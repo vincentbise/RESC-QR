@@ -7,6 +7,10 @@ class Admin extends Model {
         return $stmt->fetch();
     }
 
+    public function updatePasswordHash($adminId, $passwordHash) {
+        return $this->update('admin', ['password_hash' => $passwordHash], 'admin_id', $adminId);
+    }
+
     public function findById_admin($id) {
         return $this->findById('admin', 'admin_id', $id);
     }
