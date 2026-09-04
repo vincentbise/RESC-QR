@@ -101,16 +101,14 @@ class StudentViewController extends Controller {
         $profileImagesDir = ROOT_PATH . '/public/img/profiles';
         $oldImage = $currentStudent['profile_image'] ?? null;
 
-        // Handle photo removal
         if (!empty($_POST['remove_profile_image'])) {
             $data['profile_image'] = null;
             if ($oldImage && is_file($profileImagesDir . '/' . basename($oldImage))) {
                 @unlink($profileImagesDir . '/' . basename($oldImage));
             }
-            $oldImage = null; // already handled, don't delete again below
+            $oldImage = null; 
         }
 
-        // Handle new photo upload
         if (!empty($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
             $result = InputValidator::handleImageUpload($_FILES['profile_image'], $profileImagesDir);
 
@@ -149,5 +147,60 @@ class StudentViewController extends Controller {
 
         $this->setFlash('success', 'Profile updated successfully.');
         $this->redirect('/studentview/profile');
+    }
+
+
+    public function changePassword() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/studentview/profile');
+            return;
+        }
+
+        $this->validateCSRF();
+
+        $input = $this->getJsonInput();
+        if (empty($input)) {
+            $input = $_POST;
+        }
+
+        $currentPassword = (string) ($input['current_password'] ?? '');
+        $newPassword     = (string) ($input['new_password'] ?? '');
+        $confirmPassword = (string) ($input['confirm_password'] ?? '');
+
+        if ($currentPassword === '' || $newPassword === '' || $confirmPassword === '') {
+            $this->json(['success' => false, 'message' => 'All fields are required.'], 422);
+            return;
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            $this->json(['success' => false, 'message' => 'New password does not match.'], 422);
+            return;
+        }
+
+        require_once ROOT_PATH . '/app/models/Student.php';
+        $studentModel = new Student();
+        $id = getUserId();
+        $currentStudent = $studentModel->findStudentById($id);
+
+        if (!$currentStudent || !password_verify($currentPassword, $currentStudent['password_hash'] ?? '')) {
+            $this->json(['success' => false, 'message' => 'Current password is incorrect.'], 422);
+            return;
+        }
+
+        $validation = InputValidator::validateNewPassword($newPassword);
+        if ($validation !== true) {
+            $this->json(['success' => false, 'message' => $validation], 422);
+            return;
+        }
+
+        if (password_verify($newPassword, $currentStudent['password_hash'] ?? '')) {
+            $this->json(['success' => false, 'message' => 'New password must be different from the current password.'], 422);
+            return;
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
+        $studentModel->updatePassword($id, $newHash);
+
+        $this->json(['success' => true, 'message' => 'Password changed successfully.']);
     }
 }

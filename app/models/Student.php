@@ -107,6 +107,10 @@ class Student extends Model {
         return $this->update('student', $data, 'student_id', $id);
     }
 
+    public function updatePassword($id, $newHash) {
+        return $this->update('student', ['password_hash' => $newHash], 'student_id', $id);
+    }
+
     public function deleteStudent($id) {
         return $this->update('student', ['profile_status' => 'Inactive'], 'student_id', $id);
     }

@@ -40,15 +40,21 @@ class InputValidator {
         return true;
     }
 
+    public static function validateNewPassword($password) {
+        $password = (string) ($password ?? '');
+        if (strlen($password) < 8) return 'Password must be at least 8 characters.';
+        if (!preg_match('/[A-Z]/', $password)) return 'Password must include an uppercase letter.';
+        if (!preg_match('/[a-z]/', $password)) return 'Password must include a lowercase letter.';
+        if (!preg_match('/[0-9]/', $password)) return 'Password must include a number.';
+        if (!preg_match('/[^A-Za-z0-9]/', $password)) return 'Password must include a symbol.';
+        return true;
+    }
+
     public static function validateQRCode($qrValue) {
         $qrValue = trim($qrValue ?? '');
         return preg_match('/^[A-Za-z0-9\-_]{5,255}$/', $qrValue) ? $qrValue : false;
     }
 
-    /**
-     * Validates an uploaded image ($_FILES entry) and moves it into $destDir.
-     * Returns the stored filename on success, or an array ['error' => message] on failure.
-     */
     public static function handleImageUpload($file, $destDir, $maxBytes = 3145728) {
         if (!isset($file) || !is_array($file) || $file['error'] === UPLOAD_ERR_NO_FILE) {
             return null; // nothing uploaded, not an error
