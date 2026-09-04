@@ -5,7 +5,9 @@
     </div>
 </div>
 
-<div class="card" style="max-width:700px;">
+<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+<div class="card" style="flex:1 1 420px;max-width:700px;">
     <div class="card-body">
 
         <form id="editProfileForm" enctype="multipart/form-data">
@@ -120,6 +122,68 @@
         </form>
 
     </div>
+</div>
+
+<div class="card" style="flex:1 1 340px;max-width:420px;">
+    <div class="card-body">
+        <h3 style="margin:0 0 4px;font-size:16px;font-weight:800;">Change Password</h3>
+        <p class="text-muted" style="margin:0 0 20px;font-size:13px;">Update the password you used to sign in.</p>
+
+        <form id="changePasswordForm">
+            <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+
+            <div class="form-group">
+                <label for="current_password">Current Password *</label>
+                <div style="position:relative;">
+                    <input type="password" class="form-control" id="current_password" name="current_password"
+                           autocomplete="current-password" required style="padding-right:40px;">
+                    <button type="button" class="pwd-toggle-btn" data-target="current_password"
+                            style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="new_password">New Password *</label>
+                <div style="position:relative;">
+                    <input type="password" class="form-control" id="new_password" name="new_password"
+                           autocomplete="new-password" required style="padding-right:40px;">
+                    <button type="button" class="pwd-toggle-btn" data-target="new_password"
+                            style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="text-muted" id="newPasswordHint" style="display:none;font-size:12px;margin-top:6px;">
+                    At least 8 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password *</label>
+                <div style="position:relative;">
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                           autocomplete="new-password" required style="padding-right:40px;">
+                    <button type="button" class="pwd-toggle-btn" data-target="confirm_password"
+                            style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="passwordFormError" class="text-muted" style="display:none;color:var(--accent-danger);font-size:12px;margin-bottom:13px;"></div>
+
+            <div class="d-flex gap-1" id="passwordActionBar" style="margin-top:8px;display:none;overflow:hidden;transition:max-height 0.3s ease,opacity 0.3s ease;max-height:0;opacity:0;">
+                <button type="submit" class="btn btn-primary" id="changePasswordBtn">
+                    <i class="fas fa-key"></i>
+                    <span class="btn-text"> Update Password</span>
+                    <span class="spinner" style="display:none;"><i class="fas fa-circle-notch fa-spin"></i></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 </div>
 
 <script>
@@ -294,5 +358,115 @@ document.getElementById('editProfileForm').addEventListener('submit', async (e) 
     btn.querySelector('.btn-text').style.display = 'inline';
     btn.querySelector('.spinner').style.display = 'none';
     btn.disabled = false;
+});
+
+const currentPasswordInput = document.getElementById('current_password');
+const newPasswordInput     = document.getElementById('new_password');
+const confirmPasswordInput = document.getElementById('confirm_password');
+const changePasswordBtn    = document.getElementById('changePasswordBtn');
+const passwordActionBar    = document.getElementById('passwordActionBar');
+const passwordFormError    = document.getElementById('passwordFormError');
+const changePasswordForm   = document.getElementById('changePasswordForm');
+const newPasswordHint      = document.getElementById('newPasswordHint');
+
+document.querySelectorAll('.pwd-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        const icon  = btn.querySelector('i');
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+    });
+});
+
+function showPasswordError(message) {
+    passwordFormError.textContent = message;
+    passwordFormError.style.display = message ? 'block' : 'none';
+}
+
+function checkPasswordDirty() {
+    const dirty = currentPasswordInput.value !== '' ||
+                  newPasswordInput.value !== '' ||
+                  confirmPasswordInput.value !== '';
+
+    if (dirty) {
+        passwordActionBar.style.display = 'flex';
+        requestAnimationFrame(() => {
+            passwordActionBar.style.maxHeight = '80px';
+            passwordActionBar.style.opacity   = '1';
+        });
+    } else {
+        passwordActionBar.style.maxHeight = '0';
+        passwordActionBar.style.opacity   = '0';
+        setTimeout(() => { passwordActionBar.style.display = 'none'; }, 300);
+    }
+}
+
+newPasswordInput.addEventListener('input', () => {
+    newPasswordHint.style.display = newPasswordInput.value !== '' ? 'block' : 'none';
+});
+
+[currentPasswordInput, newPasswordInput, confirmPasswordInput].forEach(el => {
+    el.addEventListener('input', () => {
+        showPasswordError('');
+        checkPasswordDirty();
+    });
+});
+
+const NEW_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+
+changePasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showPasswordError('');
+
+    const currentPassword = currentPasswordInput.value;
+    const newPassword     = newPasswordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    if (currentPassword === '' || newPassword === '' || confirmPassword === '') {
+        showPasswordError('Please fill in all fields.');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showPasswordError('New password does not match.');
+        return;
+    }
+
+    if (!NEW_PASSWORD_PATTERN.test(newPassword)) {
+        showPasswordError('New password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a symbol.');
+        return;
+    }
+
+    const btn = changePasswordBtn;
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.spinner').style.display = 'inline';
+    btn.disabled = false;
+
+    try {
+        const data = await App.ajax('/studentview/changePassword', {
+            method: 'POST',
+            body: {
+                current_password: currentPassword,
+                new_password: newPassword,
+                confirm_password: confirmPassword
+            }
+        });
+
+        if (data.success) {
+            App.toast(data.message, 'success');
+            changePasswordForm.reset();
+            newPasswordHint.style.display = 'none';
+            checkPasswordDirty();
+        } else {
+            showPasswordError(data.message || 'Unable to change password.');
+        }
+    } catch (err) {
+        showPasswordError(err.message || 'An error occurred.');
+    }
+
+    btn.querySelector('.btn-text').style.display = 'inline';
+    btn.querySelector('.spinner').style.display = 'none';
+    checkPasswordDirty();
 });
 </script>
