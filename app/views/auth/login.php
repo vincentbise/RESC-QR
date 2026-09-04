@@ -199,6 +199,36 @@
             padding-right: 46px;
         }
 
+        /* Forgot password link row */
+        .field-meta-row {
+            display: flex;
+            justify-content: flex-start;
+            margin-top: 10px;
+        }
+
+        .forgot-link {
+            font-size: 13px;
+            font-weight: 600;
+            color:#b0b8cc;
+            text-decoration: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            padding: 2px 0;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+            color: #fff;
+        }
+
+        .forgot-link:focus-visible {
+            outline: 2px solid var(--accent-red);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
         .btn-login {
             width: 100%;
             padding: 16px;
@@ -329,6 +359,22 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 36px 24px;
+                border-radius: 16px;
+            }
+
+            .login-logo img {
+                width: 72px;
+                height: 72px;
+            }
+
+            .login-logo h1 {
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -383,6 +429,10 @@
                         <i class="fas fa-exclamation-circle"></i>
                         <span id="passwordErrorText"></span>
                     </p>
+                    <div class="field-meta-row">
+                      
+                        <a href="<?= baseUrl('forgot_password.php') ?>" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-login" id="loginBtn">
@@ -422,6 +472,8 @@
         const emailErrorText = document.getElementById('emailErrorText');
         const passErrorMsg   = document.getElementById('passwordErrorMsg');
         const passErrorText  = document.getElementById('passwordErrorText');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+
 
         let countdownTimer = null;
         let usedAttempts   = parseInt(localStorage.getItem(ATTEMPTS_KEY) || '0', 10);
@@ -436,6 +488,11 @@
         emailInput.addEventListener('input', () => clearFieldError('email'));
         passInput.addEventListener('input',  () => clearFieldError('password'));
 
+        forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Forgot password clicked, navigating to:', forgotPasswordLink.href);
+        window.location.href = forgotPasswordLink.href;
+        });
         function setFieldError(field, message, doFocus = false) {
             if (field === 'email') {
                 emailInput.classList.add('field-error');
