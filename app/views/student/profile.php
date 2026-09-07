@@ -77,32 +77,30 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="course">Course *</label>
-                    <select class="form-control" id="course" name="course" required>
-                        <?php foreach (['BSIT','BSCS','BSIS','BSEd','BSBA'] as $c): ?>
-                            <option value="<?= $c ?>" <?= $student['course'] === $c ? 'selected' : '' ?>><?= $c ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label>Course</label>
+                    <input type="text" class="form-control" value="<?= e($student['course'] ?? '') ?>"
+                           disabled style="opacity:0.6;">
                 </div>
                 <div class="form-group">
-                    <label for="year_level">Year Level *</label>
-                    <select class="form-control" id="year_level" name="year_level" required>
-                        <?php foreach (['1st Year','2nd Year','3rd Year','4th Year'] as $y): ?>
-                            <option value="<?= $y ?>" <?= $student['year_level'] === $y ? 'selected' : '' ?>><?= $y ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label>Year Level</label>
+                    <input type="text" class="form-control" value="<?= e($student['year_level'] ?? '') ?>"
+                           disabled style="opacity:0.6;">
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="class_id">Class / Section *</label>
-                <select class="form-control" id="class_id" name="class_id" required>
-                    <?php foreach ($classes as $cls): ?>
-                        <option value="<?= e($cls['class_id']) ?>" <?= $student['class_id'] == $cls['class_id'] ? 'selected' : '' ?>>
-                            <?= e($cls['section_name'] . ' — ' . $cls['program']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <label>Class / Section</label>
+                <?php
+                    $currentSection = '';
+                    foreach ($classes as $cls) {
+                        if ($cls['class_id'] == $student['class_id']) {
+                            $currentSection = $cls['section_name'] . ' — ' . $cls['program'];
+                            break;
+                        }
+                    }
+                ?>
+                <input type="text" class="form-control" value="<?= e($currentSection ?: 'Not assigned') ?>"
+                       disabled style="opacity:0.6;">
             </div>
 
             <div class="form-group">
