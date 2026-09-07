@@ -26,6 +26,14 @@ class AuthController extends Controller {
         $this->view('auth/login');
     }
 
+    public function forgotpassword() {
+        if (isLoggedIn()) {
+            $this->redirectByRole();
+            return;
+        }
+        $this->view('auth/forgot_password');
+    }
+
     public function authenticate() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/auth/login');

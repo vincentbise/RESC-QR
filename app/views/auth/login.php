@@ -431,7 +431,7 @@
                     </p>
                     <div class="field-meta-row">
                       
-                        <a href="<?= baseUrl('forgot_password.php') ?>" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
+                        <a href="<?= baseUrl('auth/forgotpassword') ?>" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
                     </div>
                 </div>
 
