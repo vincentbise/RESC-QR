@@ -111,7 +111,7 @@
                        disabled style="opacity:0.6;">
             </div>
 
-            <div class="d-flex gap-1" style="margin-top:28px;">
+            <div class="d-flex gap-1" id="profileActionBar" style="margin-top:28px;overflow:hidden;max-height:0;opacity:0;transition:max-height 0.3s ease, opacity 0.3s ease;display:none;">
                 <button type="submit" class="btn btn-primary" id="submitBtn">
                     <i class="fas fa-save"></i>
                     <span class="btn-text"> Save Changes</span>
@@ -193,6 +193,34 @@ document.querySelectorAll('#editProfileForm input:not([type="file"]):not([disabl
     originalValues[el.name] = el.value;
 });
 
+const profileActionBar = document.getElementById('profileActionBar');
+let photoChanged = false;
+
+function checkProfileDirty() {
+    let dirty = photoChanged;
+    if (!dirty) {
+        document.querySelectorAll('#editProfileForm input:not([type="file"]):not([disabled]), #editProfileForm select').forEach(el => {
+            if (originalValues[el.name] !== undefined && el.value !== originalValues[el.name]) dirty = true;
+        });
+    }
+    if (dirty) {
+        profileActionBar.style.display = 'flex';
+        requestAnimationFrame(() => {
+            profileActionBar.style.maxHeight = '80px';
+            profileActionBar.style.opacity   = '1';
+        });
+    } else {
+        profileActionBar.style.maxHeight = '0';
+        profileActionBar.style.opacity   = '0';
+        setTimeout(() => { profileActionBar.style.display = 'none'; }, 300);
+    }
+}
+
+document.querySelectorAll('#editProfileForm input:not([type="file"]):not([disabled]), #editProfileForm select').forEach(el => {
+    el.addEventListener('input', checkProfileDirty);
+    el.addEventListener('change', checkProfileDirty);
+});
+
 const avatarImg      = document.getElementById('profileAvatarImg');
 const avatarInitials = document.getElementById('profileAvatarInitials');
 const fileInput       = document.getElementById('profileImageInput');
@@ -234,6 +262,8 @@ fileInput.addEventListener('change', () => {
     }
 
     removeFlag.value = '0';
+    photoChanged = true;
+    checkProfileDirty();
     const reader = new FileReader();
     reader.onload = (e) => showAvatarImage(e.target.result);
     reader.readAsDataURL(file);
@@ -242,6 +272,8 @@ fileInput.addEventListener('change', () => {
 document.getElementById('removePhotoBtn').addEventListener('click', () => {
     fileInput.value = '';
     removeFlag.value = '1';
+    photoChanged = true;
+    checkProfileDirty();
     showAvatarInitials();
 });
 
@@ -256,6 +288,8 @@ document.getElementById('cancelBtn').addEventListener('click', () => {
     } else {
         showAvatarInitials();
     }
+    photoChanged = false;
+    checkProfileDirty();
     App.toast('Changes discarded.', 'info');
 });
 
@@ -278,6 +312,8 @@ document.getElementById('editProfileForm').addEventListener('submit', async (e) 
             });
             removeFlag.value = '0';
             fileInput.value = '';
+            photoChanged = false;
+            checkProfileDirty();
 
             const firstName = formData.get('first_name').trim();
             const lastName  = formData.get('last_name').trim();
