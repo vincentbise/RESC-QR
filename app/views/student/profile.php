@@ -307,12 +307,12 @@ document.getElementById('editProfileForm').addEventListener('submit', async (e) 
         if (data.success) {
             App.toast(data.message, 'success');
 
-            document.querySelectorAll('#editProfileForm input:not([type="file"]):not([disabled]), #editProfileForm select').forEach(el => {
-                originalValues[el.name] = el.value;
-            });
             removeFlag.value = '0';
             fileInput.value = '';
             photoChanged = false;
+            document.querySelectorAll('#editProfileForm input:not([type="file"]):not([disabled]), #editProfileForm select').forEach(el => {
+                originalValues[el.name] = el.value;
+            });
             checkProfileDirty();
 
             const firstName = formData.get('first_name').trim();
