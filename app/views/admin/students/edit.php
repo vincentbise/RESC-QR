@@ -70,40 +70,89 @@
                 <input type="text" class="form-control" value="<?= e($student['qr_code_value'] ?? 'Not assigned') ?>" disabled style="opacity:0.6;">
             </div>
 
-            <div class="d-flex gap-1" style="margin-top:28px;">
+            <div class="d-flex gap-1" id="editActionBar"
+                 style="margin-top:28px;overflow:hidden;transition:max-height 0.3s ease,opacity 0.3s ease;max-height:0;opacity:0;display:none;">
                 <button type="submit" class="btn btn-primary" id="submitBtn">
                     <i class="fas fa-save"></i> <span class="btn-text">Save Changes</span>
                     <span class="spinner" style="display:none;"><i class="fas fa-circle-notch fa-spin"></i></span>
                 </button>
-                <a href="<?= baseUrl('student') ?>" class="btn btn-secondary">Cancel</a>
+                <button type="button" class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    btn.querySelector('.btn-text').style.display = 'none';
-    btn.querySelector('.spinner').style.display = 'inline';
-    btn.disabled = true;
+(function () {
+    const form       = document.getElementById('editStudentForm');
+    const actionBar  = document.getElementById('editActionBar');
+    const cancelBtn  = document.getElementById('cancelEditBtn');
 
-    const formData = new FormData(e.target);
+    // Snapshot original values on page load
+    const originalValues = {};
+    form.querySelectorAll('input:not([type="hidden"]):not([disabled]), select').forEach(el => {
+        originalValues[el.name] = el.value;
+    });
 
-    try {
-        const data = await App.ajax('/student/update/<?= $student['student_id'] ?>', { method: 'POST', body: formData });
-        if (data.success) {
-            App.toast(data.message, 'success');
-            setTimeout(() => window.location.href = BASE_URL + '/student', 800);
+    function checkDirty() {
+        let dirty = false;
+        form.querySelectorAll('input:not([type="hidden"]):not([disabled]), select').forEach(el => {
+            if (originalValues[el.name] !== undefined && el.value !== originalValues[el.name]) dirty = true;
+        });
+
+        if (dirty) {
+            actionBar.style.display = 'flex';
+            requestAnimationFrame(() => {
+                actionBar.style.maxHeight = '80px';
+                actionBar.style.opacity   = '1';
+            });
         } else {
-            App.toast(data.message || 'Update failed.', 'error');
+            actionBar.style.maxHeight = '0';
+            actionBar.style.opacity   = '0';
+            setTimeout(() => { actionBar.style.display = 'none'; }, 300);
         }
-    } catch (err) {
-        App.toast(err.message || 'An error occurred.', 'error');
     }
-    btn.querySelector('.btn-text').style.display = 'inline';
-    btn.querySelector('.spinner').style.display = 'none';
-    btn.disabled = false;
-});
+
+    // Watch all editable fields
+    form.querySelectorAll('input:not([type="hidden"]):not([disabled]), select').forEach(el => {
+        el.addEventListener('input',  checkDirty);
+        el.addEventListener('change', checkDirty);
+    });
+
+    // Cancel — restore original values and hide action bar
+    cancelBtn.addEventListener('click', () => {
+        form.querySelectorAll('input:not([type="hidden"]):not([disabled]), select').forEach(el => {
+            if (originalValues[el.name] !== undefined) el.value = originalValues[el.name];
+        });
+        checkDirty();
+        App.toast('Changes discarded.', 'info');
+    });
+
+    // Submit
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.querySelector('.btn-text').style.display = 'none';
+        btn.querySelector('.spinner').style.display = 'inline';
+        btn.disabled = true;
+
+        const formData = new FormData(form);
+
+        try {
+            const data = await App.ajax('/student/update/<?= $student['student_id'] ?>', { method: 'POST', body: formData });
+            if (data.success) {
+                App.toast(data.message, 'success');
+                setTimeout(() => window.location.href = BASE_URL + '/student', 800);
+            } else {
+                App.toast(data.message || 'Update failed.', 'error');
+            }
+        } catch (err) {
+            App.toast(err.message || 'An error occurred.', 'error');
+        }
+
+        btn.querySelector('.btn-text').style.display = 'inline';
+        btn.querySelector('.spinner').style.display = 'none';
+        btn.disabled = false;
+    });
+})();
 </script>
