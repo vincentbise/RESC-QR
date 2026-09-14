@@ -40,6 +40,8 @@ class AuthController extends Controller {
             return;
         }
 
+        $this->validateCSRF();
+
         $rawEmail = $_POST['email'] ?? '';
         $email    = InputValidator::validateEmail($rawEmail);
         $password = $_POST['password'] ?? '';
