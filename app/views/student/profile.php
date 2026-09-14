@@ -316,15 +316,12 @@ document.getElementById('editProfileForm').addEventListener('submit', async (e) 
             const firstName = formData.get('first_name').trim();
             const lastName  = formData.get('last_name').trim();
             const initials  = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
-
-            // course and year_level are NOT form inputs — they come from the DB JOIN.
-            // Keep the existing displayed text so it never goes null after save.
             const courseYearEl = document.getElementById('profileCourseYear');
-            const courseYearText = courseYearEl.textContent; // preserve current value
+            const courseYearText = courseYearEl.textContent;
 
             avatarInitials.textContent = initials;
             document.getElementById('profileFullName').textContent = firstName + ' ' + lastName;
-            courseYearEl.textContent = courseYearText; // no change needed — already correct
+            courseYearEl.textContent = courseYearText;
 
             const sidebarName = document.getElementById('sidebarUserName');
             if (sidebarName) sidebarName.textContent = firstName + ' ' + lastName;
