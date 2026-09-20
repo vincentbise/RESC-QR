@@ -10,6 +10,7 @@ class QRController extends Controller {
         $studentModel = $this->model('Student');
         $classModel = $this->model('ClassModel');
 
+        $search  = InputValidator::sanitizeString($_GET['search'] ?? '');
         $classId = InputValidator::validateId($_GET['class_id'] ?? '');
         $page = (int)($_GET['page'] ?? 1);
         if ($page < 1) {
@@ -17,14 +18,14 @@ class QRController extends Controller {
         }
 
         $perPage = 12;
-        $total = (int)$studentModel->countFiltered('', $classId ?: null);
+        $total = (int)$studentModel->countFiltered($search, $classId ?: null);
         $totalPages = $total > 0 ? (int)ceil($total / $perPage) : 1;
         if ($page > $totalPages) {
             $page = $totalPages;
         }
 
         $offset = ($page - 1) * $perPage;
-        $students = $studentModel->getAllPaginated('', $classId ?: null, $perPage, $offset);
+        $students = $studentModel->getAllPaginated($search, $classId ?: null, $perPage, $offset);
         $classes = $classModel->getAll();
 
         if ($this->isAjax()) {

@@ -61,7 +61,7 @@
                         <?php else: ?>
                             <?php foreach ($recentScans as $scan): ?>
                                 <tr>
-                                    <td><strong><?= e($scan['first_name'] . ' ' . $scan['last_name']) ?></strong></td>
+                                    <td><strong><?= e($scan['last_name'] . ', ' . $scan['first_name']) ?></strong></td>
                                     <td><?= e($scan['section_name']) ?></td>
                                     <td><?= date('M d, g:i A', strtotime($scan['scan_time'])) ?></td>
                                     <td><span class="badge badge-<?= $scan['scan_result'] === 'Valid' ? 'success' : 'danger' ?>"><?= e($scan['scan_result']) ?></span></td>

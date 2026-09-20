@@ -72,23 +72,8 @@
         </div>
     </div>
 
-    <!-- Scan Result -->
-    <div class="scan-result-panel" id="scanResultPanel">
-        <div class="card">
-            <div class="card-header scan-result-panel__header">
-                <h3><i class="fas fa-check-circle text-success"></i> Last Scan Result</h3>
-            </div>
-            <div class="card-body" id="scanResult">
-                <div class="empty-state scan-result-panel__empty">
-                    <i class="fas fa-qrcode"></i>
-                    <p>Waiting for scan&hellip;</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Manual Input & History -->
-    <div class="scanner-secondary">
+    <!-- Manual Entry (below scanner) -->
+    <div class="scanner-manual-panel">
         <div class="card scanner-manual">
             <div class="card-header">
                 <h3><i class="fas fa-keyboard"></i> Manual Entry</h3>
@@ -104,6 +89,23 @@
                     <button class="btn btn-primary" onclick="manualScan()">
                         <i class="fas fa-search"></i> Scan
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Result & History -->
+    <div class="scanner-secondary">
+        <div class="scan-result-panel" id="scanResultPanel">
+            <div class="card">
+                <div class="card-header scan-result-panel__header">
+                    <h3><i class="fas fa-check-circle text-success"></i> Last Scan Result</h3>
+                </div>
+                <div class="card-body" id="scanResult">
+                    <div class="empty-state scan-result-panel__empty">
+                        <i class="fas fa-qrcode"></i>
+                        <p>Waiting for scan&hellip;</p>
+                    </div>
                 </div>
             </div>
         </div>

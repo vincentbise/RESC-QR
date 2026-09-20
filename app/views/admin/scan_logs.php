@@ -31,7 +31,7 @@
                         <?php foreach ($logs as $log): ?>
                         <tr>
                             <td><span class="text-muted">#<?= e($log['scan_id']) ?></span></td>
-                            <td><strong><?= e($log['first_name'] . ' ' . $log['last_name']) ?></strong></td>
+                            <td><strong><?= e($log['last_name'] . ', ' . $log['first_name']) ?></strong></td>
                             <td><span class="badge badge-info"><?= e($log['section_name']) ?></span></td>
                             <td>
                                 <?= e($log['event_type']) ?>

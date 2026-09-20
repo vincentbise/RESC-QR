@@ -34,11 +34,30 @@
                 <input type="text" id="statusSearch" placeholder="Search name...">
             </div>
         </div>
-        <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-success status-filter active" data-filter="all">All</button>
-            <button class="btn btn-sm btn-secondary status-filter" data-filter="Safe">Safe</button>
-            <button class="btn btn-sm btn-secondary status-filter" data-filter="Not Yet Scanned">Not Yet Scanned</button>
-            <button class="btn btn-sm btn-secondary status-filter" data-filter="Absent">Absent</button>
+        <div class="status-dropdown" id="statusDropdown">
+            <button class="status-dropdown-toggle btn btn-sm" id="statusDropdownBtn" type="button">
+                <i class="fas fa-users"></i>
+                <span>All Students</span>
+                <i class="fas fa-chevron-down dropdown-arrow"></i>
+            </button>
+            <div class="status-dropdown-menu" id="statusDropdownMenu">
+                <button class="status-dropdown-item active" data-filter="all" data-icon="fa-users" data-color="var(--accent-green, #16a34a)">
+                    <i class="fas fa-users"></i> All Students
+                </button>
+                <button class="status-dropdown-item" data-filter="Safe" data-icon="fa-shield-alt" data-color="var(--accent-green, #16a34a)">
+                    <i class="fas fa-shield-alt"></i> Safe
+                </button>
+                <div class="status-dropdown-divider"></div>
+                <button class="status-dropdown-item" data-filter="Missing" data-icon="fa-exclamation-triangle" data-color="var(--accent-red, #dc2626)">
+                    <i class="fas fa-exclamation-triangle"></i> Missing
+                </button>
+                <button class="status-dropdown-item" data-filter="Not Yet Scanned" data-icon="fa-clock" data-color="var(--accent-orange, #d97706)">
+                    <i class="fas fa-clock"></i> Not Yet Scanned
+                </button>
+                <button class="status-dropdown-item" data-filter="Absent" data-icon="fa-user-slash" data-color="var(--text-muted, #888)">
+                    <i class="fas fa-user-slash"></i> Absent
+                </button>
+            </div>
         </div>
     </div>
     <div class="card-body" style="padding:0;">
@@ -62,7 +81,7 @@
                         ?>
                         <tr class="status-row"
                             data-status="<?= e($status) ?>"
-                            data-name="<?= e(strtolower($s['first_name'] . ' ' . $s['last_name'])) ?>"
+                            data-name="<?= e(strtolower($s['last_name'] . ' ' . $s['first_name'])) ?>"
                             data-student-id="<?= (int)$s['student_id'] ?>">
                             <td>
                                 <div class="d-flex align-center gap-1">
@@ -73,7 +92,7 @@
                                             <?= strtoupper(substr($s['first_name'],0,1) . substr($s['last_name'],0,1)) ?>
                                         <?php endif; ?>
                                     </div>
-                                    <strong><?= e($s['first_name'] . ' ' . $s['last_name']) ?></strong>
+                                    <strong><?= e($s['last_name'] . ', ' . $s['first_name']) ?></strong>
                                 </div>
                             </td>
                             <td><span class="badge badge-info"><?= e($s['section_name']) ?></span></td>
@@ -104,41 +123,197 @@
     </div>
 </div>
 
+<style>
+/* ── Status filter dropdown ──────────────────────────────── */
+.status-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.status-dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-color, #333);
+    background: var(--bg-card, #1a1a2e);
+    color: var(--text-primary, #eee);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.status-dropdown-toggle:hover {
+    border-color: var(--border-hover, #555);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.status-dropdown-toggle .dropdown-arrow {
+    font-size: 10px;
+    opacity: 0.6;
+    transition: transform 0.2s;
+}
+
+.status-dropdown.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.status-dropdown-toggle .fa-users,
+.status-dropdown-toggle .fa-shield-alt,
+.status-dropdown-toggle .fa-exclamation-triangle,
+.status-dropdown-toggle .fa-clock,
+.status-dropdown-toggle .fa-user-slash {
+    font-size: 12px;
+}
+
+.status-dropdown-menu {
+    display: none;
+    position: fixed;
+    min-width: 200px;
+    padding: 6px 0;
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #333);
+    background: var(--bg-card, #1a1a2e);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    z-index: 9999;
+    animation: dropdownSlide 0.15s ease-out;
+}
+
+@keyframes dropdownSlide {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.status-dropdown.open .status-dropdown-menu {
+    display: block;
+}
+
+.status-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #aaa);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.status-dropdown-item:hover {
+    background: var(--bg-card-hover, rgba(255,255,255,0.06));
+    color: var(--text-primary, #eee);
+}
+
+.status-dropdown-item.active {
+    color: var(--text-primary, #eee);
+    font-weight: 700;
+    background: var(--bg-card-hover, rgba(255,255,255,0.06));
+}
+
+.status-dropdown-item.active::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 11px;
+    margin-left: auto;
+    opacity: 0.7;
+}
+
+.status-dropdown-item i {
+    width: 16px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.status-dropdown-divider {
+    height: 1px;
+    margin: 4px 12px;
+    background: var(--border-color, #333);
+}
+</style>
+
 <script>
 (function () {
     let hasActiveEvent = <?= $activeEvent ? 'true' : 'false' ?>;
-    function setActiveFilter(btn) {
-        document.querySelectorAll('.status-filter').forEach(b => {
-            b.classList.remove('active', 'btn-success');
-            b.classList.add('btn-secondary');
-        });
-        btn.classList.remove('btn-secondary');
-        btn.classList.add('active', 'btn-success');
+
+    // Alias map: filter value → actual data-status on rows
+    const STATUS_MAP = { 'Missing': 'Not Yet Scanned' };
+
+    /* ── Dropdown logic ─────────────────────────────────────── */
+    const dropdown     = document.getElementById('statusDropdown');
+    const toggleBtn    = document.getElementById('statusDropdownBtn');
+    const menu         = document.getElementById('statusDropdownMenu');
+    let currentFilter  = 'all';
+
+    function positionMenu() {
+        const rect = toggleBtn.getBoundingClientRect();
+        menu.style.top  = (rect.bottom + 6) + 'px';
+        menu.style.left = '';
+        menu.style.right = '';
+        // Align right edge of menu with right edge of button
+        const menuWidth = menu.offsetWidth || 200;
+        let left = rect.right - menuWidth;
+        if (left < 8) left = 8; // keep on screen
+        menu.style.left = left + 'px';
     }
 
-    document.querySelectorAll('.status-filter').forEach(btn => {
-        btn.addEventListener('click', () => {
-            setActiveFilter(btn);
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = !dropdown.classList.contains('open');
+        dropdown.classList.toggle('open');
+        if (willOpen) positionMenu();
+    });
+
+    // Close on outside click
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    menu.addEventListener('click', (e) => e.stopPropagation());
+
+    menu.querySelectorAll('.status-dropdown-item').forEach(item => {
+        item.addEventListener('click', () => {
+            // Update active state
+            menu.querySelectorAll('.status-dropdown-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+
+            // Update toggle button text & icon
+            const icon  = item.dataset.icon;
+            const color = item.dataset.color;
+            const label = item.textContent.trim();
+            currentFilter = item.dataset.filter;
+
+            toggleBtn.innerHTML = `<i class="fas ${icon}" style="color:${color}"></i> <span>${label}</span> <i class="fas fa-chevron-down dropdown-arrow"></i>`;
+
+            dropdown.classList.remove('open');
             applyFilters();
         });
     });
 
+    /* ── Search & filter ────────────────────────────────────── */
     document.getElementById('statusSearch').addEventListener('input', App.debounce(applyFilters, 150));
 
     function applyFilters() {
-        const query     = document.getElementById('statusSearch').value.trim().toLowerCase();
-        const activeBtn = document.querySelector('.status-filter.active');
-        const filterVal = activeBtn ? activeBtn.dataset.filter : 'all';
+        const query = document.getElementById('statusSearch').value.trim().toLowerCase();
+        const resolvedStatus = STATUS_MAP[currentFilter] || currentFilter;
 
         document.querySelectorAll('#statusBody .status-row').forEach(row => {
             const nameMatch   = !query || row.dataset.name.includes(query);
-            const statusMatch = filterVal === 'all' || row.dataset.status === filterVal;
+            const statusMatch = resolvedStatus === 'all' || row.dataset.status === resolvedStatus;
             row.style.display = (nameMatch && statusMatch) ? '' : 'none';
         });
     }
 
     applyFilters();
 
+    /* ── Stat cards ─────────────────────────────────────────── */
     function updateStatCards(summary) {
         const safeEl     = document.getElementById('safeVal');
         const missingEl  = document.getElementById('missingVal');
@@ -148,6 +323,7 @@
         if (notInClsEl) notInClsEl.textContent = summary.not_in_class_count ?? 0;
     }
 
+    /* ── Dynamic row rendering ──────────────────────────────── */
     function renderRows(students) {
         const tbody = document.getElementById('statusBody');
         if (!students || !students.length) {
@@ -162,7 +338,7 @@
                 : (s === 'Absent' ? 'warning' : 'info'));
 
         tbody.innerHTML = students.map(s => {
-            const initials = (s.first_name[0] + s.last_name[0]).toUpperCase();
+            const initials = (s.last_name[0] + s.first_name[0]).toUpperCase();
             const hue      = (s.student_id * 37) % 360;
             const avatarInner = s.profile_image
                 ? `<img src="${BASE_URL}/public/img/profiles/${encodeURIComponent(s.profile_image)}" alt="" style="width:100%;height:100%;object-fit:cover;">`
@@ -176,12 +352,12 @@
                 : '';
             return `<tr class="status-row"
                         data-status="${App.escapeHtml(s.status)}"
-                        data-name="${App.escapeHtml((s.first_name + ' ' + s.last_name).toLowerCase())}"
+                        data-name="${App.escapeHtml((s.last_name + ' ' + s.first_name).toLowerCase())}"
                         data-student-id="${s.student_id}">
                 <td>
                     <div class="d-flex align-center gap-1">
                         <div class="avatar avatar-sm" style="background:hsl(${hue},60%,50%);overflow:hidden;">${avatarInner}</div>
-                        <strong>${App.escapeHtml(s.first_name + ' ' + s.last_name)}</strong>
+                        <strong>${App.escapeHtml(s.last_name + ', ' + s.first_name)}</strong>
                     </div>
                 </td>
                 <td><span class="badge badge-info">${App.escapeHtml(s.section_name)}</span></td>
@@ -194,6 +370,7 @@
         applyFilters();
     }
 
+    /* ── Auto-refresh ───────────────────────────────────────── */
     window.refreshStudentList = async function () {
         try {
             const data = await App.get('/scan/students');
@@ -209,6 +386,7 @@
         }
     };
 
+    /* ── Mark absent ────────────────────────────────────────── */
     document.getElementById('statusBody').addEventListener('click', async (e) => {
         const btn = e.target.closest('.mark-absent');
         if (!btn) return;

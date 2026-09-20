@@ -91,7 +91,7 @@
                                         <?php endif; ?>
                                     </div>
                                     <div>
-                                        <strong><?= e($s['first_name'] . ' ' . $s['last_name']) ?></strong>
+                                        <strong><?= e($s['last_name'] . ', ' . $s['first_name']) ?></strong>
                                     </div>
                                 </div>
                             </td>
@@ -105,7 +105,7 @@
                                         <i class="fas fa-edit"></i> Edit
                                     </a>
                                     <button class="btn btn-danger btn-sm btn-icon" title="Delete"
-                                        onclick="deleteStudent(<?= $s['student_id'] ?>, '<?= e($s['first_name'] . ' ' . $s['last_name']) ?>')">
+                                        onclick="deleteStudent(<?= $s['student_id'] ?>, '<?= e($s['last_name'] . ', ' . $s['first_name']) ?>')">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -264,7 +264,7 @@
                 <td>
                     <div class="d-flex align-center gap-1">
                         <div class="avatar avatar-sm" style="background:hsl(${hue},60%,50%);overflow:hidden;">${avatarInner}</div>
-                        <div><strong>${App.escapeHtml(s.first_name + ' ' + s.last_name)}</strong></div>
+                        <div><strong>${App.escapeHtml(s.last_name + ', ' + s.first_name)}</strong></div>
                     </div>
                 </td>
                 <td class="col-email">${App.escapeHtml(s.email || '—')}</td>
@@ -277,7 +277,7 @@
                             <i class="fas fa-edit"></i> Edit
                         </a>
                         <button class="btn btn-danger btn-sm btn-icon" title="Delete"
-                            onclick="deleteStudent(${s.student_id}, '${App.escapeHtml(s.first_name + ' ' + s.last_name)}')">
+                            onclick="deleteStudent(${s.student_id}, '${App.escapeHtml(s.last_name + ', ' + s.first_name)}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
