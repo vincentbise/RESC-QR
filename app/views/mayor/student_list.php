@@ -3,9 +3,6 @@
         <h1>Student Status</h1>
         <p><?= $activeEvent ? e($activeEvent['event_type']) . ' — ' . date('M d, Y g:i A', strtotime($activeEvent['event_datetime'])) : 'Class roster' ?></p>
     </div>
-    <button class="btn btn-secondary btn-sm" onclick="refreshStudentList()">
-        <i class="fas fa-sync-alt"></i> Refresh
-    </button>
 </div>
 
 <?php if ($activeEvent): ?>

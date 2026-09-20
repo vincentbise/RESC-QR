@@ -49,6 +49,19 @@
                         <p>Tap the button below to activate the camera</p>
                     </div>
                 </div>
+
+                <!-- Scan guide overlay (shown while scanning) -->
+                <div id="scanGuideOverlay" class="scan-guide-overlay" style="display:none;">
+                    <div class="scan-guide-mask">
+                        <div class="scan-guide-window">
+                            <span class="sg-corner sg-corner--tl"></span>
+                            <span class="sg-corner sg-corner--tr"></span>
+                            <span class="sg-corner sg-corner--bl"></span>
+                            <span class="sg-corner sg-corner--br"></span>
+                        </div>
+                    </div>
+                    <div class="scan-guide-hint">Align QR code within the frame</div>
+                </div>
             </div>
             <div class="scanner-hero__controls">
                 <button class="btn-scan-toggle" id="startScanBtn" onclick="startScanner()">

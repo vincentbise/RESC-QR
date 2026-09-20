@@ -87,9 +87,7 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
                 <div class="name" id="sidebarUserName"><?= e(getUserName()) ?></div>
                 <div class="role"><?= e(getUserRole()) ?></div>
             </div>
-            <a href="<?= baseUrl('auth/logout') ?>" title="Logout" style="color:var(--text-muted);font-size:14px;">
-                <i class="fas fa-sign-out-alt"></i>
-            </a>
+
         </div>
     </div>
 </aside>

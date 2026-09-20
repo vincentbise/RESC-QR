@@ -80,6 +80,10 @@ async function startScanner() {
 
     isScanning = true;
 
+    /* Show scan guide overlay */
+    var scanGuide = document.getElementById('scanGuideOverlay');
+    if (scanGuide) scanGuide.style.display = '';
+
     var btn = document.getElementById('startScanBtn');
     btn.innerHTML = '<i class="fas fa-stop"></i><span>Stop Scanning</span>';
     btn.onclick = stopScanner;
@@ -92,11 +96,19 @@ function tickScan(video, canvas) {
     if (!isScanning) return;
 
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width  = video.videoWidth;
-        canvas.height = video.videoHeight;
+        var vw = video.videoWidth;
+        var vh = video.videoHeight;
+
+        /* Crop to center 60% — matches the scan guide window */
+        var cropSize = Math.min(vw, vh) * 0.6;
+        var sx = (vw - cropSize) / 2;
+        var sy = (vh - cropSize) / 2;
+
+        canvas.width  = cropSize;
+        canvas.height = cropSize;
         var ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, sx, sy, cropSize, cropSize, 0, 0, cropSize, cropSize);
+        var imageData = ctx.getImageData(0, 0, cropSize, cropSize);
         var code = jsQR(imageData.data, imageData.width, imageData.height, {
             inversionAttempts: 'dontInvert'
         });
@@ -137,6 +149,10 @@ function stopScanner() {
         btn.onclick = startScanner;
         btn.classList.remove('is-active');
     }
+
+    /* Hide scan guide overlay */
+    var scanGuide = document.getElementById('scanGuideOverlay');
+    if (scanGuide) scanGuide.style.display = 'none';
 
     var placeholder = document.getElementById('scannerPlaceholder');
     if (placeholder) placeholder.style.display = '';

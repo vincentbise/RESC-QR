@@ -83,11 +83,13 @@
 
 /* QR Reader element — fill entire viewfinder */
 #qr-reader {
+    position: relative;
     width: 100% !important;
     max-width: 100% !important;
     border-radius: 0 !important;
     border: none !important;
     margin: 0 !important;
+    overflow: hidden;
 }
 #qr-reader video {
     width: 100% !important;
@@ -181,6 +183,106 @@
 @keyframes floatIcon {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-8px); }
+}
+
+/* --- Scan Guide Overlay (visible during scanning) --- */
+.scan-guide-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.scan-guide-mask {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Dark overlay using box-shadow trick — transparent center, dark edges */
+}
+
+.scan-guide-window {
+    position: relative;
+    width: 60%;
+    aspect-ratio: 1 / 1;
+    max-width: 280px;
+    border-radius: 16px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+}
+
+/* Corner markers on the scan window */
+.sg-corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+}
+.sg-corner::before,
+.sg-corner::after {
+    content: '';
+    position: absolute;
+    background: var(--accent-red);
+    border-radius: 2px;
+    transition: background 0.3s ease;
+}
+.sg-corner::before { width: 24px; height: 3px; }
+.sg-corner::after  { width: 3px; height: 24px; }
+
+.sg-corner--tl { top: -1px; left: -1px; }
+.sg-corner--tl::before { top: 0; left: 0; }
+.sg-corner--tl::after  { top: 0; left: 0; }
+
+.sg-corner--tr { top: -1px; right: -1px; }
+.sg-corner--tr::before { top: 0; right: 0; }
+.sg-corner--tr::after  { top: 0; right: 0; }
+
+.sg-corner--bl { bottom: -1px; left: -1px; }
+.sg-corner--bl::before { bottom: 0; left: 0; }
+.sg-corner--bl::after  { bottom: 0; left: 0; }
+
+.sg-corner--br { bottom: -1px; right: -1px; }
+.sg-corner--br::before { bottom: 0; right: 0; }
+.sg-corner--br::after  { bottom: 0; right: 0; }
+
+/* Animated scan line */
+.scan-guide-line {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(204, 27, 43, 0.5);
+    animation: scanLineMove 2.2s ease-in-out infinite;
+}
+
+@keyframes scanLineMove {
+    0%, 100% { top: 10%; opacity: 0.4; }
+    50% { top: 88%; opacity: 1; }
+}
+
+/* Hint text below the window */
+.scan-guide-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    letter-spacing: 0.3px;
+    animation: hintFade 2s ease-in-out infinite;
+}
+
+@keyframes hintFade {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
 }
 
 /* --- Big scan toggle button --- */
