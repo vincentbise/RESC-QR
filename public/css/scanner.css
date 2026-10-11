@@ -527,3 +527,79 @@
     color: var(--accent-warning);
     margin-bottom: 12px;
 }
+
+/* ============================================
+   SCAN-DETECTED OVERLAY PROMPT
+   Centered fullscreen overlay shown instantly
+   when a QR code is recognized.
+   ============================================ */
+.scan-detected-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.scan-detected-overlay.is-visible {
+    opacity: 1;
+}
+.scan-detected-overlay.is-leaving {
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+
+.scan-detected-prompt {
+    background: var(--bg-card, #1a1f2e);
+    border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+    border-radius: 20px;
+    padding: 40px 48px;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transform: scale(0.8);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 340px;
+    width: 90%;
+}
+.scan-detected-overlay.is-visible .scan-detected-prompt {
+    transform: scale(1);
+}
+.scan-detected-overlay.is-leaving .scan-detected-prompt {
+    transform: scale(0.85);
+    transition: transform 0.3s ease;
+}
+
+.scan-detected-icon {
+    margin-bottom: 16px;
+}
+.scan-detected-icon i {
+    font-size: 64px;
+    color: var(--accent-success, #10b981);
+    filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.4));
+    animation: scanDetectedPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.scan-detected-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary, #fff);
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+}
+
+.scan-detected-sub {
+    font-size: 14px;
+    color: var(--text-muted, #8b8fa3);
+}
+
+@keyframes scanDetectedPop {
+    0%   { transform: scale(0); opacity: 0; }
+    50%  { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}

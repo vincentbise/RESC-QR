@@ -117,8 +117,7 @@ function tickScan(video, canvas) {
             var now = Date.now();
             if (now - lastScanTime > 2000) {
                 lastScanTime = now;
-                stopScanner();
-                processScan(code.data);
+                showScanFeedback(code.data);
                 return;
             }
         }
@@ -166,7 +165,53 @@ function manualScan() {
     input.value = '';
 }
 
+/* --- Show "QR Scanned" feedback inside the viewfinder, then process --- */
+function showScanFeedback(qrCode) {
+    /* Stop the scan loop so we don't re-detect */
+    isScanning = false;
+    if (scanLoop) { cancelAnimationFrame(scanLoop); scanLoop = null; }
+
+    /* Audible beep */
+    try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        var actx = new AudioCtx();
+        var osc  = actx.createOscillator();
+        var gain = actx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 1200;
+        gain.gain.setValueAtTime(0.35, actx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.18);
+        osc.connect(gain);
+        gain.connect(actx.destination);
+        osc.start(actx.currentTime);
+        osc.stop(actx.currentTime + 0.18);
+    } catch(e) {}
+
+    /* Hide the scan guide */
+    var scanGuide = document.getElementById('scanGuideOverlay');
+    if (scanGuide) scanGuide.style.display = 'none';
+
+    /* Show feedback overlay inside the viewfinder */
+    var viewfinder = document.querySelector('.scanner-hero__viewfinder');
+    var feedback = document.createElement('div');
+    feedback.id = 'scanFeedback';
+    feedback.style.cssText = 'position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);';
+    feedback.innerHTML =
+        '<i class="fas fa-check-circle" style="font-size:64px;color:#10b981;margin-bottom:14px;animation:scanPop .4s cubic-bezier(.34,1.56,.64,1);"></i>' +
+        '<div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.3px;">QR Code Scanned!</div>' +
+        '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:6px;">Processing&hellip;</div>';
+    viewfinder.appendChild(feedback);
+
+    /* After 1.5s, remove feedback, fully stop scanner, and process */
+    setTimeout(function() {
+        if (feedback.parentNode) feedback.remove();
+        stopScanner();
+        processScan(qrCode);
+    }, 1500);
+}
+
 async function processScan(qrCode) {
+
     var resultDiv = document.getElementById('scanResult');
     resultDiv.innerHTML =
         '<div style="text-align:center;padding:40px;">' +
