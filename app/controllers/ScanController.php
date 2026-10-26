@@ -46,7 +46,7 @@ class ScanController extends Controller {
 
         $activeEvent = $this->eventModel->getActiveEvent();
         if (!$activeEvent) {
-            $this->json(['success' => false, 'message' => 'No active emergency event.']);
+            $this->json(['success' => false, 'message' => 'no active emergency']);
             return;
         }
 

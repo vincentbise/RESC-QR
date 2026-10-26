@@ -35,7 +35,7 @@ $labelColor      = $isSafe ? 'var(--accent-success)' : ($isNotYetScanned ? 'var(
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+<div class="student-dashboard-grid">
     <div class="card">
         <div class="card-header"><h3><i class="fas fa-user"></i> My Info</h3></div>
         <div class="card-body">
@@ -52,11 +52,11 @@ $labelColor      = $isSafe ? 'var(--accent-success)' : ($isNotYetScanned ? 'var(
                 </div>
             </div>
             <table style="width:100%;">
-                <tr><td class="text-muted" style="padding:8px 0;width:120px;">Name</td><td style="padding:8px 0;"><strong><?= e(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')) ?></strong></td></tr>
-                <tr><td class="text-muted" style="padding:8px 0;">Course</td><td style="padding:8px 0;"><?= e($student['course'] ?? '') ?></td></tr>
-                <tr><td class="text-muted" style="padding:8px 0;">Year</td><td style="padding:8px 0;"><?= e($student['year_level'] ?? '') ?></td></tr>
-                <tr><td class="text-muted" style="padding:8px 0;">Section</td><td style="padding:8px 0;"><span class="badge badge-info"><?= e($student['section_name'] ?? '') ?></span></td></tr>
-                <tr><td class="text-muted" style="padding:8px 0;">Email</td><td style="padding:8px 0;"><?= e($student['email'] ?? '—') ?></td></tr>
+                <tr><td class="text-muted info-label">Name</td><td style="padding:8px 0;"><strong><?= e(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')) ?></strong></td></tr>
+                <tr><td class="text-muted info-label">Course</td><td style="padding:8px 0;"><?= e($student['course'] ?? '') ?></td></tr>
+                <tr><td class="text-muted info-label">Year</td><td style="padding:8px 0;"><?= e($student['year_level'] ?? '') ?></td></tr>
+                <tr><td class="text-muted info-label">Section</td><td style="padding:8px 0;"><span class="badge badge-info"><?= e($student['section_name'] ?? '') ?></span></td></tr>
+                <tr><td class="text-muted info-label">Email</td><td style="padding:8px 0;"><?= e($student['email'] ?? '—') ?></td></tr>
             </table>
         </div>
     </div>
@@ -72,3 +72,28 @@ $labelColor      = $isSafe ? 'var(--accent-success)' : ($isNotYetScanned ? 'var(
         </div>
     </div>
 </div>
+
+<style>
+.student-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.info-label {
+    padding: 8px 0;
+    width: 120px;
+    white-space: nowrap;
+}
+@media (max-width: 768px) {
+    .student-dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+@media (max-width: 480px) {
+    .info-label {
+        width: 80px;
+        font-size: 12px;
+    }
+}
+</style>

@@ -1,7 +1,7 @@
 <div class="page-header">
     <div>
         <h1>Student Status</h1>
-        <p><?= $activeEvent ? e($activeEvent['event_type']) . ' — ' . date('M d, Y g:i A', strtotime($activeEvent['event_datetime'])) : 'Class roster' ?></p>
+        <p><?= $activeEvent ? e($activeEvent['event_type']) . ' — ' . date('M d, Y g:i A', strtotime($activeEvent['event_datetime'])) : '' ?></p>
     </div>
 </div>
 
@@ -48,11 +48,11 @@
                     <i class="fas fa-shield-alt"></i> Safe
                 </button>
                 <div class="status-dropdown-divider"></div>
-                <button class="status-dropdown-item" data-filter="Missing" data-icon="fa-exclamation-triangle" data-color="var(--accent-red, #dc2626)">
-                    <i class="fas fa-exclamation-triangle"></i> Missing
-                </button>
                 <button class="status-dropdown-item" data-filter="Not Yet Scanned" data-icon="fa-clock" data-color="var(--accent-orange, #d97706)">
                     <i class="fas fa-clock"></i> Not Yet Scanned
+                </button>
+                <button class="status-dropdown-item" data-filter="Missing" data-icon="fa-exclamation-triangle" data-color="var(--accent-red, #dc2626)">
+                    <i class="fas fa-exclamation-triangle"></i> Missing
                 </button>
                 <button class="status-dropdown-item" data-filter="Absent" data-icon="fa-user-slash" data-color="var(--text-muted, #888)">
                     <i class="fas fa-user-slash"></i> Absent
@@ -64,11 +64,11 @@
         <div class="table-wrapper">
             <table>
                 <thead>
-                    <tr><th>Student</th><th>Section</th><th>Phone</th><th>Status</th><th>Actions</th></tr>
+                    <tr><th>Student</th><th>Section</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="statusBody">
                     <?php if (empty($students)): ?>
-                        <tr><td colspan="5" class="text-center text-muted" style="padding:60px;">No student statuses available</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted" style="padding:60px;">No student statuses available</td></tr>
                     <?php else: ?>
                         <?php foreach ($students as $s): ?>
                         <?php
@@ -96,21 +96,23 @@
                                 </div>
                             </td>
                             <td><span class="badge badge-info"><?= e($s['section_name']) ?></span></td>
-                            <td><?= e($s['phone'] ?? '—') ?></td>
                             <td><span class="badge badge-<?= $badgeCls ?>"><?= e($status) ?></span></td>
                             <td>
                                 <div class="d-flex gap-1">
-                                    <?php if ($activeEvent && $status === 'Not Yet Scanned' && !empty($s['phone'])): ?>
-                                        <a href="tel:<?= e($s['phone']) ?>" class="btn btn-sm btn-warning btn-icon" title="Call">
-                                            <i class="fas fa-phone"></i>
-                                        </a>
-                                    <?php endif; ?>
-                                    <?php if (!$activeEvent && $status !== 'Absent'): ?>
-                                        <button class="btn btn-sm btn-danger btn-icon mark-absent"
-                                                data-student-id="<?= (int)$s['student_id'] ?>"
-                                                title="Mark Absent">
-                                            <i class="fas fa-user-slash"></i>
-                                        </button>
+                                    <?php if ($activeEvent): ?>
+                                        <?php if (!empty($s['phone'])): ?>
+                                            <a href="tel:<?= e($s['phone']) ?>" class="dial-btn" title="Call <?= e($s['first_name']) ?>">
+                                                <i class="fas fa-phone-alt"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <?php if ($status !== 'Absent'): ?>
+                                            <button class="btn btn-sm btn-danger btn-icon mark-absent"
+                                                    data-student-id="<?= (int)$s['student_id'] ?>"
+                                                    title="Mark Absent">
+                                                <i class="fas fa-user-slash"></i>
+                                            </button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -240,14 +242,65 @@
     margin: 4px 12px;
     background: var(--border-color, #333);
 }
+/* ── Inline dial button ─────────────────────────────────── */
+.dial-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--accent-green, #10b981);
+    font-size: 12px;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    flex-shrink: 0;
+}
+.dial-btn:hover {
+    background: rgba(16, 185, 129, 0.25);
+    transform: scale(1.12);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+    color: #34d399;
+}
+.dial-btn:active {
+    transform: scale(0.95);
+}
+/* ── Mobile responsive ─────────────────────────────────── */
+@media (max-width: 768px) {
+    .card-header .d-flex.align-center.gap-2 {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+    .card-header .d-flex.align-center.gap-2 h3 {
+        margin-bottom: 4px;
+    }
+    .status-dropdown {
+        width: 100%;
+    }
+    .status-dropdown-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+    .table-wrapper {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table-wrapper table {
+        min-width: 0;
+    }
+}
 </style>
 
 <script>
 (function () {
     let hasActiveEvent = <?= $activeEvent ? 'true' : 'false' ?>;
 
-    // Alias map: filter value → actual data-status on rows
-    const STATUS_MAP = { 'Missing': 'Not Yet Scanned' };
+    // No alias map needed — Missing and Not Yet Scanned are distinct statuses
+    const STATUS_MAP = {};
 
     /* ── Dropdown logic ─────────────────────────────────────── */
     const dropdown     = document.getElementById('statusDropdown');
@@ -327,7 +380,7 @@
     function renderRows(students) {
         const tbody = document.getElementById('statusBody');
         if (!students || !students.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:60px;">No student statuses available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted" style="padding:60px;">No student statuses available</td></tr>';
             return;
         }
 
@@ -343,13 +396,21 @@
             const avatarInner = s.profile_image
                 ? `<img src="${BASE_URL}/public/img/profiles/${encodeURIComponent(s.profile_image)}" alt="" style="width:100%;height:100%;object-fit:cover;">`
                 : initials;
-            const phone    = s.phone ? App.escapeHtml(s.phone) : '';
-            const callBtn  = (hasActiveEvent && s.status === 'Not Yet Scanned' && phone)
-                ? `<a href="tel:${phone}" class="btn btn-sm btn-warning btn-icon" title="Call"><i class="fas fa-phone"></i></a>`
-                : '';
-            const absentBtn = (!hasActiveEvent && s.status !== 'Absent')
-                ? `<button class="btn btn-sm btn-danger btn-icon mark-absent" data-student-id="${s.student_id}" title="Mark Absent"><i class="fas fa-user-slash"></i></button>`
-                : '';
+            const phone = s.phone ? App.escapeHtml(s.phone) : '';
+
+            let actionHtml = '';
+            if (hasActiveEvent) {
+                // During event: show phone call button
+                if (phone) {
+                    actionHtml = `<a href="tel:${phone}" class="dial-btn" title="Call"><i class="fas fa-phone-alt"></i></a>`;
+                }
+            } else {
+                // No event: show mark absent button
+                if (s.status !== 'Absent') {
+                    actionHtml = `<button class="btn btn-sm btn-danger btn-icon mark-absent" data-student-id="${s.student_id}" title="Mark Absent"><i class="fas fa-user-slash"></i></button>`;
+                }
+            }
+
             return `<tr class="status-row"
                         data-status="${App.escapeHtml(s.status)}"
                         data-name="${App.escapeHtml((s.last_name + ' ' + s.first_name).toLowerCase())}"
@@ -361,9 +422,8 @@
                     </div>
                 </td>
                 <td><span class="badge badge-info">${App.escapeHtml(s.section_name)}</span></td>
-                <td>${phone || '—'}</td>
                 <td><span class="badge badge-${badgeClass(s.status)}">${App.escapeHtml(s.status)}</span></td>
-                <td><div class="d-flex gap-1">${callBtn}${absentBtn}</div></td>
+                <td><div class="d-flex gap-1">${actionHtml}</div></td>
             </tr>`;
         }).join('');
 

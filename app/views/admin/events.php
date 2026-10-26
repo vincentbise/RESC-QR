@@ -100,7 +100,7 @@
                 </div>
                 <div class="alert alert-warning">
                     <i class="fas fa-info-circle"></i>
-                    <span>Creating an event will mark <strong>all active students</strong> as "Missing" until scanned.</span>
+                    <span>Creating an event will mark <strong>all active students</strong> as "Not Yet Scanned" until scanned.</span>
                 </div>
             </div>
             <div class="modal-footer">

@@ -36,7 +36,7 @@
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+<div class="dashboard-grid">
     <div class="card">
         <div class="card-header">
             <h3><i class="fas fa-history"></i> Recent Scans</h3>
@@ -109,5 +109,19 @@
         </div>
     </div>
 </div>
+
+<style>
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+</style>
 
 <script src="<?= publicUrl('js/dashboard.js') ?>"></script>

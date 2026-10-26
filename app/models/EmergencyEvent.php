@@ -57,4 +57,12 @@ class EmergencyEvent extends Model {
             [':eid' => $eventId]
         );
     }
+    public function markUnscannedAsMissing($eventId) {
+        $this->query(
+            "UPDATE student_status
+             SET status = 'Missing'
+             WHERE event_id = :eid AND status = 'Not Yet Scanned'",
+            [':eid' => $eventId]
+        );
+    }
 }

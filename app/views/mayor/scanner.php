@@ -1,7 +1,7 @@
 <?php if (!$activeEvent): ?>
 <div class="alert alert-warning">
     <i class="fas fa-info-circle"></i>
-    <span><strong>No active emergency event.</strong> The scanner requires an active event to log scans. Ask an administrator to declare an emergency.</span>
+    <span><strong>no active emergency.</strong> The scanner requires an active emergency to scan.</span>
 </div>
 <?php endif; ?>
 

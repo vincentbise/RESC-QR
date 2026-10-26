@@ -42,7 +42,7 @@ class EventController extends Controller {
             ]);
 
             $this->eventModel->initializeStatuses($id);
-            $this->setFlash('success', 'Emergency declared! All students marked as Missing.');
+            $this->setFlash('success', 'Emergency declared! All students marked as Not Yet Scanned.');
         } catch (\Exception $e) {
             $this->setFlash('error', 'Failed to create event: ' . $e->getMessage());
         }
@@ -65,7 +65,7 @@ class EventController extends Controller {
 
         try {
             $this->eventModel->close($id);
-            $this->setFlash('success', 'Event closed successfully.');
+            $this->setFlash('success', 'Event closed successfully. Students not yet scanned are recorded as missing.');
         } catch (\Exception $e) {
             $this->setFlash('error', 'Failed to close event.');
         }

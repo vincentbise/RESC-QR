@@ -8,7 +8,7 @@
 </div>
 
 <div class="card" style="max-width:500px;margin:0 auto;">
-    <div class="card-body" style="text-align:center;padding:48px 40px;">
+    <div class="card-body" style="text-align:center;padding:40px 24px;">
         <img id="qrImage"
              src="<?= generateQRCodeUrl($student['qr_code_value'] ?? 'NONE', 280) ?>"
              alt="QR Code"
@@ -33,14 +33,14 @@
             </div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:16px;">
-            <button class="btn btn-primary" onclick="toggleFullscreen()" style="flex:1;">
+        <div class="qr-actions">
+            <button class="btn btn-primary qr-action-btn" onclick="toggleFullscreen()">
                 <i class="fas fa-expand"></i> Fullscreen
             </button>
-            <button class="btn btn-success" onclick="downloadQR(this)" style="flex:1;">
+            <button class="btn btn-success qr-action-btn" onclick="downloadQR(this)">
                 <i class="fas fa-download"></i> Download
             </button>
-            <button class="btn" onclick="printQR()" style="flex:1;background:#0891b2 ;color:#fff;border:none;display:flex;align-items:center;justify-content:center;gap:6px;"">
+            <button class="btn qr-action-btn" onclick="printQR()" style="background:#0891b2;color:#fff;">
                 <i class="fas fa-print"></i> Print
             </button>
         </div>
@@ -67,6 +67,35 @@
     body * { visibility: hidden; }
     #printArea, #printArea * { visibility: visible; }
     #printArea { display: block !important; position: fixed; top: 0; left: 0; width: 100%; }
+}
+.qr-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.qr-action-btn {
+    min-width: 120px;
+    justify-content: center;
+}
+@media (max-width: 768px) {
+    .card[style*="max-width:500px"] {
+        max-width: 100% !important;
+    }
+}
+@media (max-width: 480px) {
+    #qrImage {
+        width: 200px !important;
+        height: 200px !important;
+    }
+    .qr-actions {
+        flex-direction: column;
+    }
+    .qr-action-btn {
+        width: 100%;
+        min-width: 0;
+    }
 }
 </style>
 
