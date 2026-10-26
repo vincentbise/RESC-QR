@@ -9,9 +9,9 @@
 
 define('MAIL_HOST',       'smtp.gmail.com');
 define('MAIL_PORT',       465);
-define('MAIL_USERNAME',   'anonuevoraulvincent@gmail.com');
-define('MAIL_PASSWORD',   'xqlv ynjb duqy uvmg');
-define('MAIL_FROM_EMAIL', 'anonuevoraulvincent@gmail.com');
+define('MAIL_USERNAME',   'qrresc@gmail.com');
+define('MAIL_PASSWORD',   'hmcejtxbyyghykcl');
+define('MAIL_FROM_EMAIL', 'qrresc@gmail.com');
 define('MAIL_FROM_NAME',  APP_NAME);
 define('MAIL_ENCRYPTION', 'smtps');                      // 'smtps' = port 465, 'tls' = port 587
 
