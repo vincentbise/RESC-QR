@@ -288,7 +288,7 @@
 
         .expiry-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent-success), var(--accent-red));
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-success));
             border-radius: 4px;
             transition: width 1s linear;
         }
