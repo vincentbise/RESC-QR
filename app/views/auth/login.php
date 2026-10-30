@@ -59,7 +59,7 @@
         .login-card {
             background: var(--bg-card);
             border-radius: 20px;
-            padding: 48px 40px;
+            padding: 48px 40px 24px;
             box-shadow: var(--shadow-card);
             border: 1px solid var(--border-color);
             position: relative;
@@ -463,7 +463,7 @@
 
         @media (max-width: 480px) {
             .login-card {
-                padding: 36px 24px;
+                padding: 36px 24px 20px;
                 border-radius: 16px;
             }
 
