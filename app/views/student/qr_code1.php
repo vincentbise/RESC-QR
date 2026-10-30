@@ -10,7 +10,8 @@
 <div class="card" style="max-width:500px;margin:0 auto;">
     <div class="card-body" style="text-align:center;padding:48px 40px;">
         <img id="qrImage"
-             src="<?= generateQRCodeUrl($student['qr_code_value'] ?? 'NONE', 280) ?>"
+             data-qr="<?= e($student['qr_code_value'] ?? 'NONE') ?>"
+             data-qr-size="280"
              alt="QR Code"
              crossorigin="anonymous"
              style="width:280px;height:280px;border-radius:16px;background:#fff;padding:12px;margin-bottom:20px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
@@ -48,7 +49,9 @@
 </div>
 
 <div id="fullscreenQR" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:9999;justify-content:center;align-items:center;flex-direction:column;cursor:pointer;" onclick="toggleFullscreen()">
-    <img src="<?= generateQRCodeUrl($student['qr_code_value'] ?? 'NONE', 400) ?>" style="width:80vmin;height:80vmin;max-width:400px;max-height:400px;">
+    <img data-qr="<?= e($student['qr_code_value'] ?? 'NONE') ?>"
+         data-qr-size="400"
+         style="width:80vmin;height:80vmin;max-width:400px;max-height:400px;">
     <div style="color:#333;font-size:20px;font-weight:700;margin-top:20px;"><?= e(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')) ?></div>
     <div style="color:#666;font-size:14px;margin-top:8px;">Tap anywhere to close</div>
 </div>
@@ -58,7 +61,9 @@
     <div style="text-align:center;font-family:sans-serif;padding:40px;">
         <h2 style="margin-bottom:4px;"><?= e(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')) ?></h2>
         <p style="color:#666;font-size:13px;margin-bottom:20px;"><?= e($student['qr_code_value'] ?? '') ?></p>
-        <img src="<?= generateQRCodeUrl($student['qr_code_value'] ?? 'NONE', 300) ?>" style="width:300px;height:300px;">
+        <img data-qr="<?= e($student['qr_code_value'] ?? 'NONE') ?>"
+             data-qr-size="300"
+             style="width:300px;height:300px;">
         <p style="color:#888;font-size:12px;margin-top:20px;">RESC-QR Emergency Monitor — Present during evacuations</p>
     </div>
 </div>
@@ -73,7 +78,7 @@
 
 <script>
 const studentName = "<?= e(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')) ?>";
-const qrUrl = "<?= generateQRCodeUrl($student['qr_code_value'] ?? 'NONE', 600) ?>";
+const qrData = "<?= e($student['qr_code_value'] ?? 'NONE') ?>";
 
 function toggleFullscreen() {
     const el = document.getElementById('fullscreenQR');
@@ -91,23 +96,20 @@ function downloadQR(btn) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
     btn.disabled = true;
 
-    fetch(qrUrl)
-        .then(res => res.blob())
-        .then(blob => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'RESC-QR-' + studentName.replace(/\s+/g, '-') + '.png';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        })
-        .catch(() => alert('Download failed. Please try again.'))
-        .finally(() => {
-            btn.innerHTML = originalHTML;
-            btn.disabled = false;
-        });
+    try {
+        const dataUrl = generateQRDataUrl(qrData, 600);
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'RESC-QR-' + studentName.replace(/\s+/g, '-') + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } catch (e) {
+        alert('Download failed. Please try again.');
+    } finally {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    }
 }
 
 function printQR() {

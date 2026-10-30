@@ -20,6 +20,61 @@
     const CSRF_TOKEN = '<?= generateCSRFToken() ?>';
 </script>
 <script src="<?= publicUrl('js/app.js') ?>"></script>
+<script src="<?= publicUrl('js/qrcode-generator.min.js') ?>"></script>
+<script>
+/**
+ * Render a QR code onto a canvas element or create a data URL.
+ * Uses the qrcode-generator library (client-side, zero network requests).
+ * @param {string} data    - The string to encode (e.g. "RESC-STU-12345-1698000000")
+ * @param {number} size    - Desired pixel size of the output image
+ * @returns {string}       - A data:image/png;base64,... URL
+ */
+function generateQRDataUrl(data, size) {
+    size = size || 200;
+    var qr = qrcode(0, 'M');
+    qr.addData(data);
+    qr.make();
+    var moduleCount = qr.getModuleCount();
+    var cellSize = Math.max(1, Math.floor(size / moduleCount));
+    var actualSize = cellSize * moduleCount;
+    var margin = Math.floor((size - actualSize) / 2);
+    var canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000000';
+    for (var r = 0; r < moduleCount; r++) {
+        for (var c = 0; c < moduleCount; c++) {
+            if (qr.isDark(r, c)) {
+                ctx.fillRect(margin + c * cellSize, margin + r * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+    return canvas.toDataURL('image/png');
+}
+
+/**
+ * Find all elements with data-qr attribute and render QR codes into them.
+ * Call this after page load or after dynamically inserting QR elements.
+ */
+function renderAllQRCodes(container) {
+    var root = container || document;
+    var imgs = root.querySelectorAll('img[data-qr]');
+    for (var i = 0; i < imgs.length; i++) {
+        var img = imgs[i];
+        if (img.src && img.src.indexOf('data:') === 0) continue; // already rendered
+        var data = img.getAttribute('data-qr');
+        var size = parseInt(img.getAttribute('data-qr-size') || '200', 10);
+        if (data && data !== 'NONE') {
+            img.src = generateQRDataUrl(data, size);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() { renderAllQRCodes(); });
+</script>
 <div class="app-layout">
 
 <?php require_once ROOT_PATH . '/app/views/layouts/sidebar.php'; ?>

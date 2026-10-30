@@ -29,13 +29,9 @@ class QRController extends Controller {
         $classes = $classModel->getAll();
 
         if ($this->isAjax()) {
-            $qrStudents = array_map(function($s) {
-                $s['qr_url'] = generateQRCodeUrl($s['qr_code_value'], 200);
-                return $s;
-            }, $students);
             $this->json([
                 'success'     => true,
-                'students'    => $qrStudents,
+                'students'    => $students,
                 'total'       => $total,
                 'page'        => $page,
                 'per_page'    => $perPage,

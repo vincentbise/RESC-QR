@@ -64,7 +64,8 @@ $labelColor      = $isSafe ? 'var(--accent-success)' : ($isNotYetScanned ? 'var(
     <div class="card">
         <div class="card-header"><h3><i class="fas fa-qrcode"></i> My QR Code</h3></div>
         <div class="card-body" style="text-align:center;">
-            <img src="<?= generateQRCodeUrl($student['qr_code_value'] ?? 'NONE', 180) ?>"
+            <img data-qr="<?= e($student['qr_code_value'] ?? 'NONE') ?>"
+                 data-qr-size="180"
                  alt="My QR Code"
                  style="width:180px;height:180px;border-radius:12px;background:#fff;padding:8px;margin-bottom:12px;">
             <div><code style="color:var(--accent-primary);font-size:12px;"><?= e($student['qr_code_value'] ?? '') ?></code></div>

@@ -74,10 +74,10 @@
         <?php foreach ($students as $s): ?>
         <div class="card qr-card" style="text-align:center;">
             <div class="card-body" style="padding:20px;">
-                <img src="<?= generateQRCodeUrl($s['qr_code_value'] ?? 'NONE', 160) ?>"
+                <img data-qr="<?= e($s['qr_code_value'] ?? 'NONE') ?>"
+                     data-qr-size="160"
                      alt="QR Code for <?= e($s['last_name']) ?>"
-                     style="width:160px;height:160px;border-radius:8px;background:#fff;padding:8px;margin-bottom:12px;"
-                     loading="lazy">
+                     style="width:160px;height:160px;border-radius:8px;background:#fff;padding:8px;margin-bottom:12px;">
                 <div style="font-weight:700;font-size:14px;margin-bottom:2px;">
                     <?= e($s['last_name'] . ', ' . $s['first_name']) ?>
                 </div>
@@ -132,13 +132,13 @@
             return;
         }
         grid.innerHTML = students.map(s => {
-            const qrUrl = s.qr_url || (BASE_URL + '/public/qr-placeholder.png');
+            const qrValue = App.escapeHtml(s.qr_code_value || 'NONE');
             return `<div class="card qr-card" style="text-align:center;">
                 <div class="card-body" style="padding:20px;">
-                    <img src="${qrUrl}"
+                    <img data-qr="${qrValue}"
+                         data-qr-size="160"
                          alt="QR Code"
-                         style="width:160px;height:160px;border-radius:8px;background:#fff;padding:8px;margin-bottom:12px;"
-                         loading="lazy">
+                         style="width:160px;height:160px;border-radius:8px;background:#fff;padding:8px;margin-bottom:12px;">
                     <div style="font-weight:700;font-size:14px;margin-bottom:2px;">
                         ${App.escapeHtml(s.last_name + ', ' + s.first_name)}
                     </div>
@@ -149,6 +149,8 @@
                 </div>
             </div>`;
         }).join('');
+        // Render QR codes for the newly inserted cards
+        renderAllQRCodes(grid);
     }
 
     function buildPageBtn(page, label, isActive, isDisabled, isEllipsis) {
