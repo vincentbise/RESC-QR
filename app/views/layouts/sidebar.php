@@ -54,7 +54,7 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
         <div class="nav-section">
             <div class="nav-section-title">Quick Actions</div>
             <a href="<?= baseUrl('scan/hotlines') ?>" class="nav-link <?= isActive('scan/hotlines') ?>">
-                <i class="fas fa-phone-alt"></i> Emergency Hotlines
+                <i class="fas fa-phone-alt fa-flip-horizontal"></i> Emergency Hotlines
             </a>
         </div>
 

@@ -15,7 +15,7 @@
 <div class="scanner-page">
     <div class="scanner-top-bar">
         <div class="scanner-top-bar__left">
-            <h1><i class="fas fa-camera"></i> QR Scanner</h1>
+            <h1>QR Scanner</h1>
             <p class="scanner-subtitle">Scan student QR codes to mark Safe</p>
         </div>
         <?php if ($activeEvent): ?>
