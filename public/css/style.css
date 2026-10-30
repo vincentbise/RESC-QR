@@ -1327,6 +1327,8 @@ textarea.form-control {
 
 [data-theme="light"] a { color: #cc1b2b; }
 [data-theme="light"] a:hover { color: #e52535; }
+[data-theme="light"] a.btn-primary,
+[data-theme="light"] a.btn-primary:hover { color: #fff; }
 
 [data-theme="light"] .toggle-password:hover { background: rgba(0,0,0,0.05); }
 

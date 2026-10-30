@@ -129,9 +129,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     if (toggle && sidebar) {
+        let sidebarHistoryPushed = false;
+
+        const closeSidebar = (fromHistory = false) => {
+            if (!sidebar.classList.contains('open')) return;
+
+            sidebar.classList.remove('open');
+            sidebar.classList.add('collapsed');
+
+            if (sidebarHistoryPushed && !fromHistory) {
+                sidebarHistoryPushed = false;
+                history.back();
+            }
+        };
+
         toggle.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-            sidebar.classList.toggle('open');
+            const isOpen = sidebar.classList.contains('open');
+
+            if (isOpen) {
+                closeSidebar();
+                return;
+            }
+
+            sidebar.classList.remove('collapsed');
+            sidebar.classList.add('open');
+
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                history.pushState({ sidebarOpen: true }, '', window.location.href);
+                sidebarHistoryPushed = true;
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!window.matchMedia('(max-width: 768px)').matches || !sidebar.classList.contains('open')) return;
+            if (!sidebar.contains(event.target) && !toggle.contains(event.target)) closeSidebar();
+        });
+
+        window.addEventListener('popstate', () => {
+            closeSidebar(true);
+            sidebarHistoryPushed = false;
         });
     }
 
