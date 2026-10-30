@@ -20,6 +20,22 @@
             --accent-red-bright: #e52535;
             --accent-warning: #f59e0b;
             --accent-success: #10b981;
+            --shadow-card: 0 25px 60px rgba(0,0,0,0.5);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f0f2f7;
+            --bg-card: #ffffff;
+            --bg-input: #f5f6fa;
+            --border-color: #e2e5ed;
+            --text-primary: #1a1d26;
+            --text-secondary: #4a5068;
+            --text-muted: #8891a5;
+            --accent-red: #cc1b2b;
+            --accent-red-bright: #e52535;
+            --accent-warning: #d97706;
+            --accent-success: #059669;
+            --shadow-card: 0 25px 60px rgba(0,0,0,0.08);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,7 +60,7 @@
             background: var(--bg-card);
             border-radius: 20px;
             padding: 48px 40px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            box-shadow: var(--shadow-card);
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
@@ -179,7 +195,7 @@
 
         .toggle-password:hover {
             color: var(--text-secondary);
-            background: rgba(255,255,255,0.06);
+            background: rgba(128,128,128,0.1);
         }
 
         .toggle-password:focus-visible {
@@ -295,6 +311,29 @@
             color: var(--accent-warning);
         }
 
+        [data-theme="light"] .alert-box.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+        [data-theme="light"] .alert-box.success {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+            color: #059669;
+        }
+
+        [data-theme="light"] .alert-box.warning {
+            background: #fffbeb;
+            border-color: #fde68a;
+            color: #d97706;
+        }
+
+        [data-theme="light"] .lockout-box {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
         /* Attempt dots */
         .attempt-indicator {
             display: flex;
@@ -360,6 +399,68 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Theme toggle for login page */
+        .login-theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 10px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .login-theme-toggle .theme-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .login-theme-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .login-theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .login-theme-switch .slider {
+            position: absolute;
+            inset: 0;
+            background: var(--border-color);
+            border-radius: 24px;
+            transition: background 0.3s ease;
+            cursor: pointer;
+        }
+
+        .login-theme-switch .slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .login-theme-switch input:checked + .slider {
+            background: var(--accent-red);
+        }
+
+        .login-theme-switch input:checked + .slider::before {
+            transform: translateX(20px);
+        }
+
         @media (max-width: 480px) {
             .login-card {
                 padding: 36px 24px;
@@ -378,6 +479,12 @@
     </style>
 </head>
 <body>
+<script>
+(function() {
+    var theme = localStorage.getItem('resc_qr_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
     <div class="login-wrapper">
         <div class="login-card">
             <div class="login-logo">
@@ -449,10 +556,40 @@
                     <div class="dot" id="dot3"></div>
                 </div>
             </div>
+
+            <label class="login-theme-toggle" for="loginThemeSwitch">
+                <i class="fas fa-sun" id="loginThemeIcon" style="color:var(--text-muted);font-size:14px;"></i>
+                <span class="theme-label" id="loginThemeLabel">Light Mode</span>
+                <span class="login-theme-switch">
+                    <input type="checkbox" id="loginThemeSwitch" onchange="loginToggleTheme()">
+                    <span class="slider"></span>
+                </span>
+            </label>
         </div>
     </div>
 
     <script>
+    // Theme toggle for login page
+    function loginToggleTheme() {
+        var current = document.documentElement.getAttribute('data-theme') || 'light';
+        var next = (current === 'dark') ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('resc_qr_theme', next);
+        syncLoginThemeUI(next);
+    }
+
+    function syncLoginThemeUI(theme) {
+        var icon = document.getElementById('loginThemeIcon');
+        if (icon) icon.className = theme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+        var label = document.getElementById('loginThemeLabel');
+        if (label) label.textContent = theme === 'dark' ? 'Dark Mode' : 'Light Mode';
+        var sw = document.getElementById('loginThemeSwitch');
+        if (sw) sw.checked = (theme === 'dark');
+    }
+
+    // Sync on load
+    syncLoginThemeUI(document.documentElement.getAttribute('data-theme') || 'light');
+
     (function() {
         const LOCKOUT_KEY = 'resc_qr_lockout_until';
         const ATTEMPTS_KEY = 'resc_qr_used_attempts';

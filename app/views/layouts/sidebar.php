@@ -75,6 +75,15 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
     </nav>
 
     <div class="sidebar-footer">
+        <div class="theme-toggle" id="sidebarThemeToggle">
+            <i class="fas fa-sun theme-toggle-icon" id="sidebarThemeIcon"></i>
+            <span class="theme-toggle-label" id="sidebarThemeLabel">Light Mode</span>
+            <span class="theme-switch">
+                <input type="checkbox" id="sidebarThemeSwitch" tabindex="-1">
+                <span class="slider"></span>
+            </span>
+        </div>
+        <script>document.getElementById('sidebarThemeToggle').addEventListener('click', function(e) { e.preventDefault(); toggleTheme(); });</script>
         <div class="user-card">
             <div class="user-avatar" id="sidebarUserAvatar"style="overflow:hidden;">
                 <?php if ($role === 'student' && getUserAvatar()): ?>

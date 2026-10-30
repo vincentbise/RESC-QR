@@ -123,6 +123,9 @@ const App = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Sync theme UI on load (functions defined inline in header.php)
+    if (typeof syncThemeUI === 'function') syncThemeUI(document.documentElement.getAttribute('data-theme') || 'light');
+
     const toggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     if (toggle && sidebar) {

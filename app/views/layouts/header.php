@@ -16,10 +16,45 @@
 </head>
 <body>
 <script>
+// Apply saved theme immediately to prevent flash of wrong theme
+(function() {
+    var theme = localStorage.getItem('resc_qr_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+})();
+
+// Theme toggle — inline so it works even if app.js is cached
+function getTheme() {
+    return document.documentElement.getAttribute('data-theme') || 'light';
+}
+
+function toggleTheme() {
+    var current = getTheme();
+    var next = (current === 'dark') ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('resc_qr_theme', next);
+    syncThemeUI(next);
+}
+
+function syncThemeUI(theme) {
+    var sidebarSwitch = document.getElementById('sidebarThemeSwitch');
+    if (sidebarSwitch) {
+        sidebarSwitch.checked = (theme === 'dark');
+    }
+    var sidebarLabel = document.getElementById('sidebarThemeLabel');
+    if (sidebarLabel) {
+        sidebarLabel.textContent = theme === 'dark' ? 'Dark Mode' : 'Light Mode';
+    }
+    var sidebarIcon = document.getElementById('sidebarThemeIcon');
+    if (sidebarIcon) {
+        sidebarIcon.className = theme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+    }
+}
+</script>
+<script>
     const BASE_URL = '<?= BASE_URL ?>';
     const CSRF_TOKEN = '<?= generateCSRFToken() ?>';
 </script>
-<script src="<?= publicUrl('js/app.js') ?>"></script>
+<script src="<?= publicUrl('js/app.js') ?>?v=<?= time() ?>"></script>
 <script src="<?= publicUrl('js/qrcode-generator.min.js') ?>"></script>
 <script>
 /**
