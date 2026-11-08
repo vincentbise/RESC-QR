@@ -18,7 +18,19 @@ const App = {
 
         try {
             const response = await fetch(fullUrl, config);
-            const data = await response.json();
+            const responseText = await response.text();
+            let data;
+
+            try {
+                data = responseText ? JSON.parse(responseText) : {};
+            } catch (parseError) {
+                throw {
+                    status: response.status,
+                    message: response.ok
+                        ? 'The server returned an invalid response.'
+                        : `The server returned an error (${response.status}).`
+                };
+            }
 
             if (!response.ok) {
                 throw { status: response.status, ...data };
