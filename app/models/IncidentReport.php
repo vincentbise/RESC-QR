@@ -22,6 +22,16 @@ class IncidentReport extends Model {
     }
 
     public function generate($eventId, $adminId, $summary) {
+        // Reports can only be generated once the event has been closed
+        $stmt  = $this->query("SELECT status FROM emergency_event WHERE event_id = :eid", [':eid' => $eventId]);
+        $event = $stmt->fetch();
+        if (!$event) {
+            throw new Exception('Event not found.');
+        }
+        if ($event['status'] !== 'Closed') {
+            throw new Exception('This event is still active. Close the event before generating its report.');
+        }
+
         if ($this->existsForEvent($eventId)) {
             throw new Exception('A report for this event has already been generated.');
         }

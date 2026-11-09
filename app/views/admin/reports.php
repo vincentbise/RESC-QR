@@ -65,15 +65,24 @@
         <div class="modal-body">
             <div class="form-group">
                 <label for="report_event_id">Select Event</label>
+                <?php
+                    $reportedIds  = array_column($reports, 'event_id');
+                    $closedEvents = array_filter($events, fn($ev) => $ev['status'] === 'Closed' && !in_array($ev['event_id'], $reportedIds));
+                    $activeCount  = count(array_filter($events, fn($ev) => $ev['status'] !== 'Closed'));
+                ?>
                 <select class="form-control" id="report_event_id">
-                    <option value="">Choose an event...</option>
-                    <?php foreach ($events as $ev): ?>
+                    <option value=""><?= $closedEvents ? 'Choose an event...' : 'No events available' ?></option>
+                    <?php foreach ($closedEvents as $ev): ?>
                         <option value="<?= e($ev['event_id']) ?>">
                             <?= e($ev['event_type']) ?> — <?= date('M d, Y g:i A', strtotime($ev['event_datetime'])) ?>
-                            (<?= e($ev['status']) ?>)
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <?php if ($activeCount): ?>
+                <small class="text-muted" style="display:block;margin-top:6px;">
+                    <i class="fas fa-info-circle"></i> Active events aren't listed. Close an event first to generate its report.
+                </small>
+                <?php endif; ?>
             </div>
             <div class="form-group">
                 <label for="report_summary">Summary Notes</label>
@@ -92,20 +101,30 @@
 
 <!-- Print styles -->
 <style>
+#printArea { display: none; }
 @media print {
+    html, body { background: #fff !important; }
     body * { visibility: hidden !important; }
     #printArea, #printArea * { visibility: visible !important; }
     #printArea {
-        position: fixed !important;
-        inset: 0 !important;
+        display: block !important;      /* was being overridden by display:none, so nothing printed */
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
         padding: 32px 40px !important;
         background: #fff !important;
         font-family: 'Inter', Arial, sans-serif !important;
         font-size: 13px !important;
         color: #111 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
+    .main-content { margin-left: 0 !important; }
+    /* keep print text dark even when the app is in dark mode (inline colours still win) */
+    #printArea div, #printArea span, #printArea td, #printArea th { color: #111; }
+    #printArea th { background: #f5f5f5; }
 }
-#printArea { display: none; }
 </style>
 
 <!-- Hidden print area -->
@@ -145,6 +164,8 @@ async function generateReport() {
             appendReportRow(data.report);
             const badge = document.getElementById('reportCount');
             badge.textContent = ((parseInt(badge.textContent) || 0) + 1) + ' reports';
+            const used = document.querySelector('#report_event_id option[value="' + eventId + '"]');
+            if (used) used.remove();
             document.getElementById('report_event_id').value = '';
             document.getElementById('report_summary').value  = '';
         } else {
@@ -253,17 +274,17 @@ function printReport(r) {
                     <th style="padding:10px 14px;text-align:center;font-size:12px;border:1px solid #ddd;">Percentage</th>
                 </tr>
                 <tr>
-                    <td style="padding:10px 14px;border:1px solid #ddd;font-weight:600;color:#16a34a;">✓ Safe</td>
+                    <td style="padding:10px 14px;border:1px solid #ddd;font-weight:600;color:#16a34a;">Safe</td>
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;font-weight:700;">${safe}</td>
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;">${pct(safe)}</td>
                 </tr>
                 <tr style="background:#fff8f8;">
-                    <td style="padding:10px 14px;border:1px solid #ddd;font-weight:600;color:#dc2626;">✗ Missing / Not Yet Scanned</td>
+                    <td style="padding:10px 14px;border:1px solid #ddd;font-weight:600;color:#dc2626;">Missing / Not Yet Scanned</td>
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;font-weight:700;">${missing}</td>
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;">${pct(missing)}</td>
                 </tr>
                 <tr>
-                    <td style="padding:10px 14px;border:1px solid #ddd;font-weight:600;color:#d97706;">— Absent</td>
+                    <td style="padding:10px 14px;border:1px solid #ddd;font-weight:600;color:#d97706;">Absent</td>
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;font-weight:700;">${notInClass}</td>
                     <td style="padding:10px 14px;border:1px solid #ddd;text-align:center;">${pct(notInClass)}</td>
                 </tr>
