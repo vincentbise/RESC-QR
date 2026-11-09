@@ -103,13 +103,11 @@
         const classId = classFilter.value;
 
         try {
-            const res = await fetch(
-                BASE_URL + '/qr?page=' + page
+            const data = await App.ajax(
+                '/qr?page=' + page
                     + '&search='   + encodeURIComponent(search)
-                    + '&class_id=' + encodeURIComponent(classId),
-                { headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF_TOKEN } }
+                    + '&class_id=' + encodeURIComponent(classId)
             );
-            const data = await res.json();
             if (data.success) {
                 currentPage = data.page;
                 renderCards(data.students);
@@ -118,6 +116,7 @@
             }
         } catch (e) {
             console.error('QR fetch failed:', e);
+            App.toast('Unable to load QR codes. Please try again.', 'error');
         }
     }
 

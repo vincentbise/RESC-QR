@@ -9,6 +9,66 @@ var scanLoop     = null;
 var scanCount    = 0;
 var lastScanTime = 0;
 var isScanning   = false;
+var offlineQueueKey = 'resc_qr_offline_scans';
+
+function getOfflineQueue() {
+    try {
+        return JSON.parse(localStorage.getItem(offlineQueueKey) || '[]');
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveOfflineQueue(queue) {
+    try {
+        localStorage.setItem(offlineQueueKey, JSON.stringify(queue));
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function queueOfflineScan(qrCode) {
+    var queue = getOfflineQueue();
+    queue.push({ qrCode: qrCode, queuedAt: new Date().toISOString() });
+    return saveOfflineQueue(queue);
+}
+
+function isOfflineError(error) {
+    return !navigator.onLine || !error || !error.status;
+}
+
+function showQueuedScan(qrCode) {
+    var resultDiv = document.getElementById('scanResult');
+    resultDiv.innerHTML =
+        '<div class="scan-duplicate">' +
+            '<i class="fas fa-cloud-upload-alt" style="display:block;"></i>' +
+            '<div style="font-size:20px;font-weight:800;margin-bottom:4px;">Scan saved offline</div>' +
+            '<div class="text-muted">This scan will sync when the connection returns.</div>' +
+        '</div>';
+    addToHistory(qrCode, 'Queued');
+    App.toast('Scan saved offline. It will sync automatically.', 'success');
+}
+
+async function syncOfflineScans() {
+    var queue = getOfflineQueue();
+    if (!queue.length || !navigator.onLine) return;
+
+    var remaining = [];
+    for (var i = 0; i < queue.length; i++) {
+        try {
+            await processScan(queue[i].qrCode, { fromQueue: true });
+        } catch (error) {
+            remaining = queue.slice(i);
+            break;
+        }
+    }
+
+    saveOfflineQueue(remaining);
+    if (!remaining.length && queue.length) {
+        App.toast(queue.length + ' offline scan' + (queue.length === 1 ? '' : 's') + ' synced.', 'success');
+    }
+}
 
 function isIOS() {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -210,7 +270,8 @@ function showScanFeedback(qrCode) {
     }, 1500);
 }
 
-async function processScan(qrCode) {
+async function processScan(qrCode, options) {
+    options = options || {};
 
     var resultDiv = document.getElementById('scanResult');
     resultDiv.innerHTML =
@@ -266,13 +327,22 @@ async function processScan(qrCode) {
             addToHistory(qrCode, 'Invalid');
         }
 
+        return true;
     } catch(e) {
+        if (isOfflineError(e)) {
+            if (!options.fromQueue && queueOfflineScan(qrCode)) {
+                showQueuedScan(qrCode);
+                return false;
+            }
+            throw e;
+        }
         resultDiv.innerHTML =
             '<div class="scan-fail">' +
                 '<i class="fas fa-wifi" style="display:block;"></i>' +
                 '<div style="font-size:16px;font-weight:700;">Connection Error</div>' +
                 '<div class="text-muted">Failed to process scan. Check your network.</div>' +
             '</div>';
+        return false;
     }
 }
 
@@ -280,7 +350,7 @@ function addToHistory(name, result) {
     scanCount++;
     var time = new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     var tbody = document.getElementById('scanHistory');
-    var badgeMap = { 'Valid': 'success', 'Duplicate': 'warning', 'Invalid': 'danger' };
+    var badgeMap = { 'Valid': 'success', 'Duplicate': 'warning', 'Invalid': 'danger', 'Queued': 'info' };
     var badge = badgeMap[result] || 'danger';
 
     tbody.insertAdjacentHTML('afterbegin',
@@ -295,6 +365,9 @@ function addToHistory(name, result) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('online', syncOfflineScans);
+    syncOfflineScans();
+
     var toggle = document.getElementById('historyToggle');
     if (!toggle) return;
     toggle.addEventListener('click', function() {
