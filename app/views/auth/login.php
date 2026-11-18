@@ -6,6 +6,7 @@
     <title>Login — <?= APP_NAME ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
@@ -476,6 +477,140 @@
                 font-size: 24px;
             }
         }
+
+                /* ═══════════ Split-screen layout (matches mockups) ═══════════ */
+            :root {
+                --panel-bg: #0f1442;
+                --stage-red: #c51b2a;
+                --hero-sub: #ffffff;
+            }
+            [data-theme="light"] {
+                --panel-bg: #fdfdff;
+                --hero-sub: #0f1442;
+            }
+
+            body {
+                background: var(--stage-red);
+                overflow-x: hidden;
+                transition: background 0.4s ease;
+            }
+
+            /* wavy panel */
+            .stage-wave {
+                position: fixed; inset: 0;
+                width: 100%; height: 100%;
+                z-index: 0; pointer-events: none;
+            }
+            .wave-path { fill: var(--panel-bg); transition: fill 0.4s ease; }
+
+            /* headline */
+            .hero {
+                position: fixed; z-index: 1;
+                left: 5.4vw; top: 10vh;
+                width: min(38vw, 550px);
+            }
+            .hero-title {
+                font-family: 'Lato', 'Inter', sans-serif;
+                font-weight: 900;
+                font-size: clamp(28px, 3.4vw, 56px);
+                line-height: 1.08;
+                color: var(--stage-red);
+                letter-spacing: -0.5px;
+            }
+            .hero-title .line {
+                display: block; opacity: 0;
+                animation: slideRight 0.8s cubic-bezier(.2,.7,.2,1) forwards;
+            }
+            .hero-title .line:nth-child(2) { animation-delay: 0.15s; }
+            .hero-sub {
+                font-family: 'Lato', 'Inter', sans-serif;
+                font-weight: 700;
+                font-size: clamp(11px, 1.15vw, 16px);
+                line-height: 1.3;
+                margin-top: 8px;
+                color: var(--hero-sub);
+                text-align: justify;
+                opacity: 0;
+                animation: slideRight 0.8s cubic-bezier(.2,.7,.2,1) 0.35s forwards;
+            }
+
+            /* illustration */
+            .hero-art {
+                position: fixed;
+                z-index: 1;
+                left: 1vw;
+                bottom: 6vh;
+                width: min(60vw, 100vh);
+                opacity: 0;
+                animation: fadeIn 1s ease 0.2s forwards,
+                        artFloat 6s ease-in-out 1.2s infinite alternate;
+            }
+
+            .hero-art img { display: block; width: 100%; height: auto; }
+
+            /* scanner sweep over the QR code (delete the <span class="scan-sweep"> to remove) */
+            .scan-sweep {
+                position: absolute; left: 60%; top: 2%;
+                width: 28%; height: 60%;
+                overflow: hidden; border-radius: 10px; pointer-events: none;
+            }
+            .scan-sweep::before {
+                content: ''; position: absolute; left: 0; right: 0; top: -50px;
+                height: 46px;
+                background: linear-gradient(to bottom, rgba(229,37,53,0), rgba(229,37,53,0.30));
+                border-bottom: 3px solid #0f1442;
+                box-shadow: 0 6px 14px rgba(229,37,53,0.55);
+                animation: scanSweep 3.6s ease-in-out infinite;
+            }
+
+            /* login card */
+            .login-wrapper {
+                position: relative; z-index: 2;
+                width: 36vw; min-width: 340px; max-width: 440px;
+                margin-left: 55vw;
+            }
+            .login-card {
+                border-radius: 26px;
+                animation: cardIn 0.8s cubic-bezier(.2,.7,.2,1) 0.1s both;
+            }
+            [data-theme="dark"] .login-card {
+                box-shadow: -4px 6px 0 rgba(8,12,34,0.55), 0 25px 60px rgba(0,0,0,0.45);
+            }
+            [data-theme="light"] .login-card {
+                box-shadow: 0 25px 60px rgba(60,0,10,0.25);
+            }
+            .login-card::before {
+                background: linear-gradient(90deg, var(--accent-red), var(--accent-red-bright), #8B0000, var(--accent-red));
+                background-size: 200% 100%;
+                animation: barShift 4s linear infinite;
+            }
+            .login-logo img { animation: logoPop 0.7s cubic-bezier(.3,1.5,.5,1) 0.4s both; }
+
+            /* forgot link: readable in both themes (fixes the hardcoded colors) */
+            .forgot-link { color: var(--text-muted); }
+            .forgot-link:hover { color: var(--accent-red); }
+
+            /* animations */
+            @keyframes slideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+            @keyframes fadeIn     { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes artFloat   { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+            @keyframes orbFloat   { from { transform: translateY(0) scale(1); } to { transform: translateY(-22px) scale(1.08); } }
+            @keyframes scanSweep  { 0% { top: -50px; } 75%, 100% { top: 100%; } }
+            @keyframes cardIn     { from { opacity: 0; transform: translateY(30px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            @keyframes barShift   { from { background-position: 0 0; } to { background-position: 200% 0; } }
+            @keyframes logoPop    { from { opacity: 0; transform: scale(0.6) rotate(-8deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+
+            /* tablets / phones: hide the artwork, center the card */
+            @media (max-width: 900px) {
+                body { background: var(--panel-bg); }
+                .stage-wave, .orb, .hero, .hero-art { display: none; }
+                .login-wrapper { margin: 0 auto; width: 100%; min-width: 0; }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                *, *::before, *::after { animation: none !important; transition: none !important; }
+                .hero-title .line, .hero-sub, .hero-art { opacity: 1; }
+            }
     </style>
 </head>
 <body>
@@ -485,6 +620,36 @@
     document.documentElement.setAttribute('data-theme', theme);
 })();
 </script>
+
+    <!-- Wavy background panel -->
+    <svg class="stage-wave" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path class="wave-path" d="M0,0 H45 C47,20 58,28 57,55 C56,75 40,92 33,100 H0 Z">
+            <animate attributeName="d" dur="10s" repeatCount="indefinite"
+                calcMode="spline" keyTimes="0;0.5;1" keySplines="0.45 0 0.55 1;0.45 0 0.55 1"
+                values="M0,0 H45 C47,20 58,28 57,55 C56,75 40,92 33,100 H0 Z;
+                        M0,0 H46.5 C50,18 60,32 58.5,54 C57,74 43,90 36,100 H0 Z;
+                        M0,0 H45 C47,20 58,28 57,55 C56,75 40,92 33,100 H0 Z"/>
+        </path>
+    </svg>
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+
+    <!-- Headline -->
+    <section class="hero">
+        <h2 class="hero-title">
+            <span class="line">Every second counts</span>
+            <span class="line">when lives are at stake.</span>
+        </h2>
+        <p class="hero-sub">QR-based emergency attendance system that helps class mayors instantly track and report student safety status during emergencies.</p>
+    </section>
+
+    <!-- Illustration -->
+    <div class="hero-art" aria-hidden="true">
+        <img src="<?= publicUrl('img/login-element.png') ?>" alt="">
+        <span class="scan-sweep"></span>
+    </div>
+
     <div class="login-wrapper">
         <div class="login-card">
             <div class="login-logo">

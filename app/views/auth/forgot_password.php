@@ -229,9 +229,44 @@
             from { opacity: 0; transform: translateY(-8px); }
             to   { opacity: 1; transform: translateY(0); }
         }
+
+        [data-theme="light"] {
+            --bg-primary: #f0f2f7;
+            --bg-card: #ffffff;
+            --bg-input: #f5f6fa;
+            --border-color: #e2e5ed;
+            --text-primary: #1a1d26;
+            --text-secondary: #4a5068;
+            --text-muted: #8891a5;
+            --accent-success: #059669;
+        }
+
+        [data-theme="light"] .login-card {
+            box-shadow: 0 25px 60px rgba(0,0,0,0.08);
+        }
+
+        [data-theme="light"] .alert-box.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+        [data-theme="light"] .alert-box.success {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+            color: #059669;
+        }
     </style>
 </head>
 <body>
+
+    <script>
+    (function() {
+        var theme = localStorage.getItem('resc_qr_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+    </script>
+    
     <div class="login-wrapper">
         <div class="login-card">
 

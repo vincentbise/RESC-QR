@@ -291,6 +291,14 @@
     </style>
 </head>
 <body>
+
+    <script>
+    (function() {
+        var theme = localStorage.getItem('resc_qr_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+    </script>
+    
     <div class="login-wrapper">
         <div class="login-card">
 
