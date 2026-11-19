@@ -88,6 +88,20 @@ class StudentController extends Controller {
             return;
         }
 
+        if (!empty($email) && $this->studentModel->emailExists($email)) {
+            if ($this->isAjax()) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'This email address cannot be used. Please enter a different email address.',
+                    'errors' => ['email' => 'This email address cannot be used. Please enter a different email address.'],
+                ], 422);
+                return;
+            }
+            $this->setFlash('error', 'This email address cannot be used. Please enter a different email address.');
+            $this->redirect('/student/create');
+            return;
+        }
+
         $id = $this->studentModel->create([
             'first_name' => $firstName,
             'last_name'  => $lastName,
@@ -141,6 +155,20 @@ class StudentController extends Controller {
         if (isset($_POST['course']))     $data['course']     = InputValidator::sanitizeString($_POST['course']);
         if (isset($_POST['year_level'])) $data['year_level'] = InputValidator::sanitizeString($_POST['year_level']);
         if (isset($_POST['class_id']))   $data['class_id']   = InputValidator::validateId($_POST['class_id']);
+
+        if (!empty($data['email']) && $this->studentModel->emailExists($data['email'], $id)) {
+            if ($this->isAjax()) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'This email address cannot be used. Please enter a different email address.',
+                    'errors' => ['email' => 'This email address cannot be used. Please enter a different email address.'],
+                ], 422);
+                return;
+            }
+            $this->setFlash('error', 'This email address cannot be used. Please enter a different email address.');
+            $this->redirect('/student/edit/' . $id);
+            return;
+        }
 
         $data = array_filter($data, fn($v) => $v !== false && $v !== null);
 

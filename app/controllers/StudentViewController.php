@@ -86,6 +86,20 @@ class StudentViewController extends Controller {
         if (isset($_POST['phone']))      $data['phone']      = InputValidator::sanitizeString($_POST['phone']);
         if (isset($_POST['class_id']))   $data['class_id']   = InputValidator::validateId($_POST['class_id']);
 
+        if (!empty($data['email']) && $studentModel->emailExists($data['email'], $id)) {
+            if ($this->isAjax()) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'This email address cannot be used. Please enter a different email address.',
+                    'errors' => ['email' => 'This email address cannot be used. Please enter a different email address.'],
+                ], 422);
+                return;
+            }
+            $this->setFlash('error', 'This email address cannot be used. Please enter a different email address.');
+            $this->redirect('/studentview/profile');
+            return;
+        }
+
         if (empty($data['first_name']) || empty($data['last_name'])) {
             if ($this->isAjax()) {
                 $this->json(['success' => false, 'message' => 'First name and last name are required.'], 422);

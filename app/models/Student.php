@@ -86,6 +86,30 @@ class Student extends Model {
         return $stmt->fetch();
     }
 
+    public function emailExists($email, $excludeId = null) {
+        $queries = [
+            "SELECT 1 FROM admin WHERE LOWER(email) = LOWER(:admin_email)",
+            "SELECT 1 FROM class_mayor WHERE LOWER(email) = LOWER(:mayor_email)",
+        ];
+        $params = [
+            ':admin_email' => $email,
+            ':mayor_email' => $email,
+            ':student_email' => $email,
+        ];
+
+        $studentQuery = "SELECT 1 FROM student WHERE LOWER(email) = LOWER(:student_email)";
+
+        if ($excludeId !== null) {
+            $studentQuery .= " AND student_id != :exclude_id";
+            $params[':exclude_id'] = $excludeId;
+        }
+
+        $queries[] = $studentQuery;
+        $stmt = $this->query(implode(' UNION ALL ', $queries) . ' LIMIT 1', $params);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function create($data) {
         $qrCode = 'RESC-STU-' . str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT) . '-' . time();
         $defaultPassword = password_hash('Student@123', PASSWORD_BCRYPT, ['cost' => 12]);

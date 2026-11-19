@@ -67,6 +67,7 @@
                     <label for="email">Email</label>
                     <input type="email" class="form-control" id="email" name="email"
                            value="<?= e($student['email'] ?? '') ?>">
+                          <div class="field-error-message" id="emailError" role="alert"></div>
                 </div>
                 <div class="form-group">
                     <label for="phone">Phone</label>
@@ -192,7 +193,24 @@ document.querySelectorAll('#editProfileForm input:not([type="file"]):not([disabl
 });
 
 const profileActionBar = document.getElementById('profileActionBar');
+const emailInput       = document.getElementById('email');
+const emailError       = document.getElementById('emailError');
 let photoChanged = false;
+
+function clearEmailError() {
+    emailInput.classList.remove('field-error');
+    emailError.textContent = '';
+    emailError.classList.remove('visible');
+}
+
+function showEmailError(message) {
+    emailInput.classList.add('field-error');
+    emailError.textContent = message;
+    emailError.classList.add('visible');
+    emailInput.focus();
+}
+
+emailInput.addEventListener('input', clearEmailError);
 
 function checkProfileDirty() {
     let dirty = photoChanged;
@@ -293,6 +311,7 @@ document.getElementById('cancelBtn').addEventListener('click', () => {
 
 document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    clearEmailError();
     const btn = document.getElementById('submitBtn');
     btn.querySelector('.btn-text').style.display = 'none';
     btn.querySelector('.spinner').style.display = 'inline';
@@ -345,10 +364,18 @@ document.getElementById('editProfileForm').addEventListener('submit', async (e) 
             }
 
         } else {
-            App.toast(data.message || 'Update failed.', 'error');
+            if (data.errors && data.errors.email) {
+                showEmailError(data.errors.email);
+            } else {
+                App.toast(data.message || 'Update failed.', 'error');
+            }
         }
     } catch (err) {
-        App.toast(err.message || 'An error occurred.', 'error');
+        if (err.errors && err.errors.email) {
+            showEmailError(err.errors.email);
+        } else {
+            App.toast(err.message || 'An error occurred.', 'error');
+        }
     }
 
     btn.querySelector('.btn-text').style.display = 'inline';
