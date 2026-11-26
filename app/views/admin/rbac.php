@@ -126,14 +126,18 @@
                                     }
                                 ?>
                                     <td class="col-perm" data-label="<?= e($label) ?>">
-                                        <label class="perm-checkbox">
-                                            <input type="checkbox" class="perm-check"
-                                                   name="<?= $key ?>"
-                                                   data-user-type="<?= e($user['user_type']) ?>"
-                                                   data-user-id="<?= e($user['user_id']) ?>"
-                                                   <?= $isChecked ? 'checked' : '' ?>>
-                                            <span class="checkmark"></span>
-                                        </label>
+                                        <?php if ($isAdmin && $key !== 'perm_qr_scanner'): ?>
+                                            <span class="mayor-na">—</span>
+                                        <?php else: ?>
+                                            <label class="perm-checkbox">
+                                                <input type="checkbox" class="perm-check"
+                                                       name="<?= $key ?>"
+                                                       data-user-type="<?= e($user['user_type']) ?>"
+                                                       data-user-id="<?= e($user['user_id']) ?>"
+                                                       <?= $isChecked ? 'checked' : '' ?>>
+                                                <span class="checkmark"></span>
+                                            </label>
+                                        <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
 
