@@ -5,13 +5,12 @@ class UserPermission extends Model {
     // All available permissions with labels
     const PERMISSIONS = [
         'perm_qr_scanner'        => 'QR Scanner',
-        'perm_generate_report'   => 'Generate Report',
+        'perm_generate_report'   => 'Reports',
         'perm_declare_emergency' => 'Declare Emergency',
         'perm_qr_codes'          => 'QR Codes',
-        'perm_emergency_hotlines'=> 'Emergency Hotlines',
+        'perm_emergency_hotlines'=> 'Hotlines',
         'perm_my_qr'             => 'My QR',
-        'perm_student_list_admin'=> 'Student List (Admin)',
-        'perm_student_list_mayor'=> 'Student List (Mayor)',
+        'perm_student_list_mayor'=> 'Student List',
     ];
 
     // Default permissions for each role when "is_mayor" is toggled on
@@ -22,7 +21,6 @@ class UserPermission extends Model {
         'perm_qr_codes'          => 0,
         'perm_emergency_hotlines'=> 1,
         'perm_my_qr'             => 0,
-        'perm_student_list_admin'=> 0,
         'perm_student_list_mayor'=> 1,
     ];
 
@@ -34,6 +32,7 @@ class UserPermission extends Model {
                     'admin' AS user_type, 
                     a.admin_id AS user_id, 
                     a.name, 
+                    a.name AS sort_name,
                     a.email, 
                     a.role AS original_role,
                     NULL AS section_name,
@@ -58,6 +57,7 @@ class UserPermission extends Model {
                     'mayor' AS user_type, 
                     cm.mayor_id AS user_id, 
                     cm.name, 
+                    cm.name AS sort_name,
                     cm.email, 
                     'mayor' AS original_role,
                     c.section_name,
@@ -83,6 +83,7 @@ class UserPermission extends Model {
                     'student' AS user_type, 
                     s.student_id AS user_id, 
                     CONCAT(s.first_name, ' ', s.last_name) AS name, 
+                    s.last_name AS sort_name,
                     s.email, 
                     'student' AS original_role,
                     c.section_name,
@@ -103,7 +104,7 @@ class UserPermission extends Model {
                 LEFT JOIN user_permissions p ON p.user_type = 'student' AND p.user_id = s.student_id
                 WHERE s.profile_status = 'Active'
 
-                ORDER BY user_type ASC, name ASC";
+                ORDER BY CASE WHEN user_type = 'admin' THEN 0 ELSE 1 END, sort_name ASC";
 
         $stmt = $this->query($sql);
         return $stmt->fetchAll();

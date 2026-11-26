@@ -86,10 +86,6 @@
                                         </div>
                                         <div class="user-details">
                                             <div class="user-name"><?= e($user['name']) ?></div>
-                                            <div class="user-email"><?= e($user['email'] ?? 'N/A') ?></div>
-                                            <?php if ($user['section_name']): ?>
-                                                <div class="user-section"><?= e($user['section_name']) ?> — <?= e($user['program']) ?></div>
-                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </td>
