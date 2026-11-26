@@ -507,7 +507,7 @@
             .hero {
                 position: fixed; z-index: 1;
                 left: 5.4vw; top: 10vh;
-                width: min(38vw, 550px);
+                width: min(38vw, 600px);
             }
             .hero-title {
                 font-family: 'Lato', 'Inter', sans-serif;
