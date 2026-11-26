@@ -6,7 +6,8 @@ class StudentController extends Controller {
     private $classModel;
 
     public function __construct() {
-        $this->requireAuth(['admin']);
+        $this->requireAuth(['admin', 'mayor', 'student']);
+        $this->requirePermission('perm_student_list_admin');
         $this->studentModel = $this->model('Student');
         $this->classModel   = $this->model('ClassModel');
     }

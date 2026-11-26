@@ -1,10 +1,3 @@
-<div class="page-header">
-    <div>
-        <h1>Scan Logs</h1>
-        <p>Audit trail of all QR code scan activities</p>
-    </div>
-</div>
-
 <div class="card">
     <div class="card-header">
         <h3><i class="fas fa-history"></i> Scan Activity</h3>

@@ -4,11 +4,7 @@
     $totalPages = max(1, (int)($totalPages ?? 1));
 ?>
 
-<div class="page-header">
-    <div>
-        <h1>QR Codes</h1>
-        <p>View and manage student QR codes for emergency scanning</p>
-    </div>
+<div class="d-flex align-center justify-between" style="margin-bottom:16px;flex-wrap:wrap;gap:12px;">
     <div class="d-flex align-center gap-1" style="flex-wrap:wrap;">
         <div class="search-bar" style="min-width:200px;">
             <i class="fas fa-search"></i>
@@ -20,10 +16,10 @@
                 <option value="<?= e($c['class_id']) ?>" <?= $classId == $c['class_id'] ? 'selected' : '' ?>><?= e($c['section_name']) ?></option>
             <?php endforeach; ?>
         </select>
-        <button class="btn btn-primary" onclick="window.print()">
-            <i class="fas fa-print"></i> Print All
-        </button>
     </div>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print"></i> Print All
+    </button>
 </div>
 
 <div class="d-flex align-center justify-between" style="margin-bottom:12px;">

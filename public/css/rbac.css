@@ -1,0 +1,673 @@
+/* =============================================
+   RBAC — User Access Control Styles
+   ============================================= */
+
+/* Page Title */
+.rbac-page-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rbac-page-title i {
+    color: var(--accent-primary);
+    font-size: 18px;
+}
+
+/* Filter Bar */
+.rbac-filters {
+    margin-bottom: 16px;
+}
+
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    position: relative;
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.search-box i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 9px 14px 9px 38px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 13px;
+    transition: var(--transition);
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(204, 27, 43, 0.15);
+}
+
+/* Filter Tabs */
+.filter-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-secondary);
+    padding: 3px;
+    border-radius: var(--radius-sm);
+}
+
+.filter-tab {
+    padding: 6px 14px;
+    border: none;
+    background: none;
+    border-radius: calc(var(--radius-sm) - 2px);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.filter-tab:hover {
+    color: var(--text-primary);
+    background: var(--bg-card-hover);
+}
+
+.filter-tab.active {
+    background: var(--accent-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+.filter-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+
+.user-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* RBAC Table */
+.rbac-card {
+    overflow: hidden;
+}
+
+.rbac-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rbac-table thead th {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 2px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.rbac-table thead th.col-user {
+    text-align: left;
+    min-width: 220px;
+}
+
+.rbac-table thead th.col-role {
+    min-width: 90px;
+}
+
+.rbac-table thead th.col-mayor {
+    min-width: 70px;
+}
+
+.rbac-table thead th.col-perm {
+    min-width: 50px;
+}
+
+.rbac-table thead th.col-actions {
+    min-width: 60px;
+}
+
+.perm-header {
+    display: block;
+    font-size: 10px;
+    line-height: 1.3;
+    max-width: 80px;
+    margin: 0 auto;
+    word-wrap: break-word;
+}
+
+.rbac-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.rbac-table tbody tr:hover {
+    background: var(--bg-card-hover);
+}
+
+.rbac-table tbody td {
+    padding: 12px 10px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.rbac-table tbody td.col-user {
+    text-align: left;
+}
+
+/* User Cell */
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-sm {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.user-avatar-sm.admin {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-red-bright));
+}
+
+.user-avatar-sm.mayor {
+    background: linear-gradient(135deg, var(--accent-info), #60a5fa);
+}
+
+.user-avatar-sm.student {
+    background: linear-gradient(135deg, var(--accent-success), #34d399);
+}
+
+.user-details {
+    overflow: hidden;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-email {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-section {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* Role Badge */
+.role-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.role-admin {
+    background: rgba(204, 27, 43, 0.15);
+    color: var(--accent-primary);
+}
+
+.role-mayor {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-info);
+}
+
+.role-student {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-success);
+}
+
+.role-override {
+    font-size: 10px;
+    color: var(--accent-warning);
+    font-weight: 600;
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Toggle Switch (Mayor) */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.toggle-switch:has(input:disabled) {
+    cursor: not-allowed;
+}
+
+.mayor-na {
+    color: var(--text-muted);
+    font-size: 16px;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--border-color);
+    border-radius: 24px;
+    transition: var(--transition);
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--accent-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+/* Permission Checkbox */
+.perm-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.perm-checkbox input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    background: var(--bg-input);
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.perm-checkbox input:checked ~ .checkmark {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.checkmark::after {
+    content: '';
+    display: none;
+    width: 5px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+}
+
+.perm-checkbox input:checked ~ .checkmark::after {
+    display: block;
+}
+
+.perm-checkbox:hover .checkmark {
+    border-color: var(--accent-primary);
+}
+
+/* Save Button */
+.btn-save-perm {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    transition: var(--transition);
+}
+
+.btn-save-perm:hover {
+    background: var(--accent-primary);
+    color: #fff;
+}
+
+.btn-save-perm.dirty {
+    background: var(--accent-primary);
+    color: #fff;
+    animation: pulse-save 1.5s ease infinite;
+}
+
+@keyframes pulse-save {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(204, 27, 43, 0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(204, 27, 43, 0); }
+}
+
+.btn-save-perm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Pagination (inline in filter bar) */
+.rbac-pagination {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.page-btn {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.page-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Toast */
+.rbac-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    animation: toast-slide 0.3s ease;
+    box-shadow: var(--shadow-md);
+}
+
+.toast-success {
+    background: var(--accent-success);
+    color: #fff;
+}
+
+.toast-error {
+    background: var(--accent-danger);
+    color: #fff;
+}
+
+@keyframes toast-slide {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Save label (hidden on desktop, shown on mobile) */
+.save-label {
+    display: none;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+
+    .filter-tabs {
+        justify-content: center;
+    }
+
+    .filter-tab {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .filter-right {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .user-count {
+        margin-left: 0;
+        text-align: center;
+    }
+
+    .rbac-pagination {
+        justify-content: center;
+    }
+
+    /* Convert table to stacked cards */
+    .rbac-card {
+        background: none;
+        border: none;
+        box-shadow: none;
+    }
+
+    .rbac-card > .card-body {
+        padding: 0 !important;
+        background: none;
+    }
+
+    .rbac-table,
+    .rbac-table thead,
+    .rbac-table tbody,
+    .rbac-table tr,
+    .rbac-table th,
+    .rbac-table td {
+        display: block;
+    }
+
+    .rbac-table thead {
+        display: none;
+    }
+
+    .rbac-table tbody tr.user-row {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md, 10px);
+        margin-bottom: 12px;
+        padding: 16px;
+        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+    }
+
+    .rbac-table tbody tr.user-row:hover {
+        background: var(--bg-primary);
+    }
+
+    .rbac-table tbody td {
+        padding: 6px 0;
+        text-align: left;
+        border: none;
+    }
+
+    /* User cell — full width at top of card */
+    .rbac-table tbody td.col-user {
+        padding-bottom: 12px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Role and Mayor — side by side */
+    .rbac-table tbody td.col-role,
+    .rbac-table tbody td.col-mayor {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        width: auto;
+        margin-right: 20px;
+    }
+
+    .rbac-table tbody td.col-role::before,
+    .rbac-table tbody td.col-mayor::before {
+        content: attr(data-label) ": ";
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    /* Permissions — grid of labeled checkboxes */
+    .rbac-table tbody td.col-perm {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: calc(50% - 4px);
+        padding: 5px 0;
+        box-sizing: border-box;
+    }
+
+    .rbac-table tbody td.col-perm::before {
+        content: attr(data-label);
+        font-size: 12px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    .perm-checkbox {
+        justify-content: flex-start;
+    }
+
+    /* Actions — full width button at bottom */
+    .rbac-table tbody td.col-actions {
+        padding-top: 12px;
+        margin-top: 6px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .btn-save-perm {
+        width: 100%;
+        height: 40px;
+        font-size: 14px;
+        gap: 6px;
+        border-radius: var(--radius-sm);
+    }
+
+    .save-label {
+        display: inline;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .user-avatar-sm {
+        width: 36px;
+        height: 36px;
+        font-size: 12px;
+    }
+
+    .rbac-page-title {
+        font-size: 18px;
+    }
+
+    .rbac-toast {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+    }
+}

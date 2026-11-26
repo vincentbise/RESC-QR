@@ -1,10 +1,3 @@
-<div class="page-header">
-    <div>
-        <h1>My Profile</h1>
-        <p>View and update your personal and academic information</p>
-    </div>
-</div>
-
 <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
 
 <div class="card" style="flex:1 1 420px;max-width:700px;">

@@ -9,7 +9,7 @@ class ScanController extends Controller {
     private $attendanceModel;
 
     public function __construct() {
-        $this->requireAuth(['mayor', 'admin']);
+        $this->requireAuth(['mayor', 'admin', 'student']);
         $this->studentModel = $this->model('Student');
         $this->scanLogModel = $this->model('QRScanLog');
         $this->statusModel  = $this->model('StudentStatus');
@@ -18,6 +18,7 @@ class ScanController extends Controller {
     }
 
     public function index() {
+        $this->requirePermission('perm_qr_scanner');
         $activeEvent = $this->eventModel->getActiveEvent();
         $data = [
             'pageTitle'   => 'QR Scanner',
@@ -33,6 +34,7 @@ class ScanController extends Controller {
     }
 
     public function process() {
+        $this->requirePermission('perm_qr_scanner');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->json(['success' => false, 'message' => 'Invalid method'], 405);
             return;
@@ -115,6 +117,7 @@ class ScanController extends Controller {
     }
 
     public function students() {
+        $this->requirePermission('perm_student_list_mayor');
         $activeEvent = $this->eventModel->getActiveEvent();
         $classId = $_SESSION['class_id'] ?? null;
 
@@ -167,6 +170,7 @@ class ScanController extends Controller {
     }
 
     public function hotlines() {
+        $this->requirePermission('perm_emergency_hotlines');
         $data = [
             'pageTitle' => 'Emergency Hotlines',
             'hotlines'  => EMERGENCY_HOTLINES,

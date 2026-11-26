@@ -1,12 +1,4 @@
 
-
-<div class="page-header">
-    <div>
-        <h1>My QR Code</h1>
-        <p>Present this QR code to your class mayor during emergency evacuations</p>
-    </div>
-</div>
-
 <div class="card" style="max-width:500px;margin:0 auto;">
     <div class="card-body" style="text-align:center;padding:40px 24px;">
         <img id="qrImage"

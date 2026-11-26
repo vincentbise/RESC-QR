@@ -1,10 +1,3 @@
-<div class="page-header">
-    <div>
-        <h1>Student Status</h1>
-        <p><?= $activeEvent ? e($activeEvent['event_type']) . ' — ' . date('M d, Y g:i A', strtotime($activeEvent['event_datetime'])) : '' ?></p>
-    </div>
-</div>
-
 <?php if ($activeEvent): ?>
 <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
     <div class="stat-card success">

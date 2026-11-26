@@ -23,6 +23,7 @@ class App {
             'StudentViewController'   => 'StudentViewController',
             'AttendanceController'    => 'AttendanceController',
             'ApiController'           => 'ApiController',
+            'RbacController'          => 'RbacController',
         ];
 
         $urlSegment = !empty($url[0]) ? $url[0] : 'auth';

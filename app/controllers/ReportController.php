@@ -3,7 +3,8 @@
 class ReportController extends Controller {
 
     public function __construct() {
-        $this->requireAuth(['admin']);
+        $this->requireAuth(['admin', 'mayor', 'student']);
+        $this->requirePermission('perm_generate_report');
     }
 
     public function index() {

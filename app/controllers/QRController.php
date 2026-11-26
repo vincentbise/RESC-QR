@@ -3,7 +3,8 @@
 class QRController extends Controller {
 
     public function __construct() {
-        $this->requireAuth(['admin']);
+        $this->requireAuth(['admin', 'mayor', 'student']);
+        $this->requirePermission('perm_qr_codes');
     }
 
     public function index() {
