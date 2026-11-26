@@ -1,13 +1,8 @@
-<div class="page-header">
-    <div>
-        <h1>Incident Reports</h1>
-        <p>Generate and view emergency incident reports</p>
-    </div>
+<div style="margin-bottom:16px;text-align:right;">
     <button class="btn btn-primary" onclick="App.modal.open('generateReportModal')">
         <i class="fas fa-file-alt"></i> Generate Report
     </button>
 </div>
-
 <div class="card">
     <div class="card-header">
         <h3><i class="fas fa-file-alt"></i> Report History</h3>

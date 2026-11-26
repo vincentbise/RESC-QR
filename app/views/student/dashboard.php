@@ -1,10 +1,3 @@
-<div class="page-header">
-    <div>
-        <h1>Welcome, <?= e($student['first_name'] ?? '') ?></h1>
-        <p>Your emergency status dashboard</p>
-    </div>
-</div>
-
 <?php
 $isSafe          = ($status['status'] === 'Safe');
 $isNotYetScanned = ($status['status'] === 'Not Yet Scanned');

@@ -65,6 +65,26 @@ class Controller {
         }
     }
 
+    /**
+     * Require a specific RBAC permission. Redirects or returns 403 if denied.
+     */
+    protected function requirePermission($permKey) {
+        if (!hasPermission($permKey)) {
+            if ($this->isAjax()) {
+                $this->json(['success' => false, 'message' => 'You do not have permission to access this feature.'], 403);
+                exit;
+            }
+            $this->setFlash('error', 'You do not have permission to access this feature.');
+            $role = getUserRole();
+            switch ($role) {
+                case 'admin':   $this->redirect('/dashboard'); break;
+                case 'mayor':   $this->redirect('/scan'); break;
+                case 'student': $this->redirect('/studentview'); break;
+                default:        $this->redirect('/auth/login');
+            }
+        }
+    }
+
     protected function validateCSRF() {
         $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (!validateCSRFToken($token)) {

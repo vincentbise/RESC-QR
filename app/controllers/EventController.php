@@ -5,7 +5,8 @@ class EventController extends Controller {
     private $eventModel;
 
     public function __construct() {
-        $this->requireAuth(['admin']);
+        $this->requireAuth(['admin', 'mayor', 'student']);
+        $this->requirePermission('perm_declare_emergency');
         $this->eventModel = $this->model('EmergencyEvent');
     }
 

@@ -1,13 +1,8 @@
-<div class="page-header">
-    <div>
-        <h1>Emergency Events</h1>
-        <p>Manage earthquake and emergency event instances</p>
-    </div>
+<div style="margin-bottom:16px;text-align:right;">
     <button class="btn btn-danger" onclick="App.modal.open('createEventModal')">
         <i class="fas fa-plus"></i> Declare Emergency
     </button>
 </div>
-
 <div class="card">
     <div class="card-header">
         <h3><i class="fas fa-exclamation-triangle"></i> Event History</h3>

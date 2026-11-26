@@ -1,13 +1,8 @@
-<div class="page-header">
-    <div>
-        <h1>Students</h1>
-        <p>Manage student records and QR code assignments</p>
-    </div>
+<div style="margin-bottom:16px;text-align:right;">
     <a href="<?= baseUrl('student/create') ?>" class="btn btn-primary">
         <i class="fas fa-plus"></i> Add Student
     </a>
 </div>
-
 <div class="card">
     <div class="card-header">
         <div class="student-header-left">

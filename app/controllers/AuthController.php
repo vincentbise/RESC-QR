@@ -435,9 +435,41 @@ class AuthController extends Controller {
             $_SESSION['user_role'] = $userRole;
             $_SESSION['user_name'] = $userName;
             $_SESSION['user_avatar'] = $userAvatar ?? null;
+            $_SESSION['user_original_role'] = $userRole;
+
+            // === RBAC role override ===
+            // Check user_permissions to see if the effective role should change
+            $db = Database::getInstance()->getConnection();
+            $permStmt = $db->prepare(
+                "SELECT is_mayor FROM user_permissions WHERE user_type = :utype AND user_id = :uid LIMIT 1"
+            );
+            $permStmt->execute([':utype' => $userRole, ':uid' => $userId]);
+            $permRow = $permStmt->fetch();
+
+            if ($permRow) {
+                if ($userRole === 'student' && !empty($permRow['is_mayor'])) {
+                    // Student promoted to mayor
+                    $_SESSION['user_role'] = 'mayor';
+                    // Use the student's class_id for mayor functionality
+                    $stuStmt = $db->prepare("SELECT class_id FROM student WHERE student_id = :sid");
+                    $stuStmt->execute([':sid' => $userId]);
+                    $stuRow = $stuStmt->fetch();
+                    if ($stuRow) {
+                        $_SESSION['class_id'] = $stuRow['class_id'];
+                        $clsStmt = $db->prepare("SELECT section_name FROM class WHERE class_id = :cid");
+                        $clsStmt->execute([':cid' => $stuRow['class_id']]);
+                        $clsRow = $clsStmt->fetch();
+                        $_SESSION['section_name'] = $clsRow['section_name'] ?? '';
+                    }
+                } elseif ($userRole === 'mayor' && empty($permRow['is_mayor'])) {
+                    // Mayor demoted to student
+                    $_SESSION['user_role'] = 'student';
+                    unset($_SESSION['class_id'], $_SESSION['section_name']);
+                }
+            }
 
             if ($this->isAjax()) {
-                $this->json(['success' => true, 'role' => $userRole, 'redirect' => $this->getRoleRedirect($userRole)]);
+                $this->json(['success' => true, 'role' => $_SESSION['user_role'], 'redirect' => $this->getRoleRedirect($_SESSION['user_role'])]);
                 return;
             }
             $this->redirectByRole();

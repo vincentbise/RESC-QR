@@ -1,10 +1,3 @@
-<div class="page-header">
-    <div>
-        <h1>Emergency Dashboard</h1>
-        <p>Real-time student accountability overview</p>
-    </div>
-</div>
-
 <div class="stats-grid" id="statsGrid">
     <div class="stat-card primary">
         <div class="stat-header">

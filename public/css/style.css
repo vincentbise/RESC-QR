@@ -654,6 +654,23 @@ table tbody tr:last-child td {
     color: #fff;
 }
 
+.form-control.field-error {
+    border-color: var(--accent-danger);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.field-error-message {
+    display: none;
+    margin-top: 6px;
+    color: var(--accent-danger);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.field-error-message.visible {
+    display: block;
+}
+
 .btn-success {
     background: var(--accent-success);
     color: #fff;

@@ -3,7 +3,7 @@
 class StudentViewController extends Controller {
 
     public function __construct() {
-        $this->requireAuth(['student']);
+        $this->requireAuth(['student', 'admin', 'mayor']);
     }
 
     public function index() {
@@ -50,10 +50,43 @@ class StudentViewController extends Controller {
     }
 
     public function profile() {
+        $role = getUserRole();
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
-        $stmt->execute([':id' => getUserId()]);
-        $student = $stmt->fetch();
+
+        if ($role === 'mayor') {
+            // Mayor profile — load from class_mayor table, map fields to match student view
+            $stmt = $db->prepare(
+                "SELECT cm.*, c.section_name, c.program
+                 FROM class_mayor cm
+                 JOIN class c ON cm.class_id = c.class_id
+                 WHERE cm.mayor_id = :id"
+            );
+            $stmt->execute([':id' => getUserId()]);
+            $mayor = $stmt->fetch();
+
+            // Map mayor fields to student field names so the same view works
+            $nameParts = explode(' ', $mayor['name'] ?? '', 2);
+            $student = [
+                'student_id'    => $mayor['mayor_id'],
+                'first_name'    => $nameParts[0] ?? '',
+                'last_name'     => $nameParts[1] ?? '',
+                'email'         => $mayor['email'],
+                'phone'         => $mayor['phone'] ?? '',
+                'course'        => '',
+                'year_level'    => '',
+                'class_id'      => $mayor['class_id'],
+                'qr_code_value' => null,
+                'profile_image' => $mayor['profile_image'] ?? null,
+                'created_at'    => $mayor['created_at'],
+                'section_name'  => $mayor['section_name'] ?? '',
+                'program'       => $mayor['program'] ?? '',
+            ];
+        } else {
+            // Student profile
+            $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
+            $stmt->execute([':id' => getUserId()]);
+            $student = $stmt->fetch();
+        }
 
         require_once ROOT_PATH . '/app/models/ClassModel.php';
         $classModel = new ClassModel();
@@ -73,8 +106,87 @@ class StudentViewController extends Controller {
 
         $this->validateCSRF();
 
-        $id = getUserId();
+        $id   = getUserId();
+        $role = getUserRole();
 
+        // ---- MAYOR UPDATE ----
+        if ($role === 'mayor') {
+            $db = Database::getInstance()->getConnection();
+
+            $firstName = InputValidator::validateName($_POST['first_name'] ?? '');
+            $lastName  = InputValidator::validateName($_POST['last_name'] ?? '');
+            $email     = InputValidator::validateEmail($_POST['email'] ?? '') ?: null;
+            $phone     = InputValidator::sanitizeString($_POST['phone'] ?? '');
+
+            if (empty($firstName) || empty($lastName)) {
+                $this->json(['success' => false, 'message' => 'First name and last name are required.'], 422);
+                return;
+            }
+
+            $name = $firstName . ' ' . $lastName;
+
+            // Check email uniqueness among mayors
+            if ($email) {
+                $stmt = $db->prepare("SELECT mayor_id FROM class_mayor WHERE email = :email AND mayor_id != :id");
+                $stmt->execute([':email' => $email, ':id' => $id]);
+                if ($stmt->fetch()) {
+                    $this->json([
+                        'success' => false,
+                        'message' => 'This email is already in use.',
+                        'errors'  => ['email' => 'This email is already in use.'],
+                    ], 422);
+                    return;
+                }
+            }
+
+            // Handle profile image
+            $profileImagesDir = ROOT_PATH . '/public/img/profiles';
+            $stmtCur = $db->prepare("SELECT profile_image FROM class_mayor WHERE mayor_id = :id");
+            $stmtCur->execute([':id' => $id]);
+            $cur = $stmtCur->fetch();
+            $oldImage = $cur['profile_image'] ?? null;
+            $newImage = $oldImage;
+
+            if (!empty($_POST['remove_profile_image'])) {
+                $newImage = null;
+                if ($oldImage && is_file($profileImagesDir . '/' . basename($oldImage))) {
+                    @unlink($profileImagesDir . '/' . basename($oldImage));
+                }
+            }
+
+            if (!empty($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $result = InputValidator::handleImageUpload($_FILES['profile_image'], $profileImagesDir);
+                if (is_array($result) && isset($result['error'])) {
+                    $this->json(['success' => false, 'message' => $result['error']], 422);
+                    return;
+                }
+                if ($result) {
+                    $newImage = $result;
+                    if ($oldImage && is_file($profileImagesDir . '/' . basename($oldImage))) {
+                        @unlink($profileImagesDir . '/' . basename($oldImage));
+                    }
+                }
+            }
+
+            $stmt = $db->prepare("UPDATE class_mayor SET name = :name, email = :email, phone = :phone, profile_image = :img WHERE mayor_id = :id");
+            $stmt->execute([':name' => $name, ':email' => $email, ':phone' => $phone, ':img' => $newImage, ':id' => $id]);
+
+            $_SESSION['user_name']   = $name;
+            $_SESSION['user_avatar'] = $newImage;
+
+            $this->json([
+                'success' => true,
+                'message' => 'Profile updated successfully.',
+                'student' => [
+                    'first_name'    => $firstName,
+                    'last_name'     => $lastName,
+                    'profile_image' => $newImage,
+                ],
+            ]);
+            return;
+        }
+
+        // ---- STUDENT UPDATE ----
         require_once ROOT_PATH . '/app/models/Student.php';
         $studentModel = new Student();
         $currentStudent = $studentModel->findStudentById($id);
@@ -85,6 +197,20 @@ class StudentViewController extends Controller {
         if (isset($_POST['email']))      $data['email']      = InputValidator::validateEmail($_POST['email']) ?: null;
         if (isset($_POST['phone']))      $data['phone']      = InputValidator::sanitizeString($_POST['phone']);
         if (isset($_POST['class_id']))   $data['class_id']   = InputValidator::validateId($_POST['class_id']);
+
+        if (!empty($data['email']) && $studentModel->emailExists($data['email'], $id)) {
+            if ($this->isAjax()) {
+                $this->json([
+                    'success' => false,
+                    'message' => 'This email address cannot be used. Please enter a different email address.',
+                    'errors' => ['email' => 'This email address cannot be used. Please enter a different email address.'],
+                ], 422);
+                return;
+            }
+            $this->setFlash('error', 'This email address cannot be used. Please enter a different email address.');
+            $this->redirect('/studentview/profile');
+            return;
+        }
 
         if (empty($data['first_name']) || empty($data['last_name'])) {
             if ($this->isAjax()) {
@@ -177,12 +303,21 @@ class StudentViewController extends Controller {
             return;
         }
 
-        require_once ROOT_PATH . '/app/models/Student.php';
-        $studentModel = new Student();
-        $id = getUserId();
-        $currentStudent = $studentModel->findStudentById($id);
+        $id   = getUserId();
+        $role = getUserRole();
+        $db   = Database::getInstance()->getConnection();
 
-        if (!$currentStudent || !password_verify($currentPassword, $currentStudent['password_hash'] ?? '')) {
+        // Load current hash based on role
+        if ($role === 'mayor') {
+            $stmt = $db->prepare("SELECT password_hash FROM class_mayor WHERE mayor_id = :id");
+            $stmt->execute([':id' => $id]);
+        } else {
+            $stmt = $db->prepare("SELECT password_hash FROM student WHERE student_id = :id");
+            $stmt->execute([':id' => $id]);
+        }
+        $current = $stmt->fetch();
+
+        if (!$current || !password_verify($currentPassword, $current['password_hash'] ?? '')) {
             $this->json(['success' => false, 'message' => 'Current password is incorrect.'], 422);
             return;
         }
@@ -193,13 +328,19 @@ class StudentViewController extends Controller {
             return;
         }
 
-        if (password_verify($newPassword, $currentStudent['password_hash'] ?? '')) {
+        if (password_verify($newPassword, $current['password_hash'] ?? '')) {
             $this->json(['success' => false, 'message' => 'New password must be different from the current password.'], 422);
             return;
         }
 
         $newHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
-        $studentModel->updatePassword($id, $newHash);
+
+        if ($role === 'mayor') {
+            $stmt = $db->prepare("UPDATE class_mayor SET password_hash = :hash WHERE mayor_id = :id");
+        } else {
+            $stmt = $db->prepare("UPDATE student SET password_hash = :hash WHERE student_id = :id");
+        }
+        $stmt->execute([':hash' => $newHash, ':id' => $id]);
 
         $this->json(['success' => true, 'message' => 'Password changed successfully.']);
     }

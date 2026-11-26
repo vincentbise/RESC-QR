@@ -28,6 +28,7 @@
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" class="form-control" id="email" name="email" value="<?= e($student['email'] ?? '') ?>">
+                    <div class="field-error-message" id="emailError" role="alert"></div>
                 </div>
                 <div class="form-group">
                     <label for="phone">Phone</label>
@@ -87,6 +88,23 @@
     const form       = document.getElementById('editStudentForm');
     const actionBar  = document.getElementById('editActionBar');
     const cancelBtn  = document.getElementById('cancelEditBtn');
+    const emailInput = document.getElementById('email');
+    const emailError = document.getElementById('emailError');
+
+    function clearEmailError() {
+        emailInput.classList.remove('field-error');
+        emailError.textContent = '';
+        emailError.classList.remove('visible');
+    }
+
+    function showEmailError(message) {
+        emailInput.classList.add('field-error');
+        emailError.textContent = message;
+        emailError.classList.add('visible');
+        emailInput.focus();
+    }
+
+    emailInput.addEventListener('input', clearEmailError);
 
     // Snapshot original values on page load
     const originalValues = {};
@@ -131,6 +149,7 @@
     // Submit
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        clearEmailError();
         const btn = document.getElementById('submitBtn');
         btn.querySelector('.btn-text').style.display = 'none';
         btn.querySelector('.spinner').style.display = 'inline';
@@ -147,7 +166,11 @@
                 App.toast(data.message || 'Update failed.', 'error');
             }
         } catch (err) {
-            App.toast(err.message || 'An error occurred.', 'error');
+            if (err.errors && err.errors.email) {
+                showEmailError(err.errors.email);
+            } else {
+                App.toast(err.message || 'An error occurred.', 'error');
+            }
         }
 
         btn.querySelector('.btn-text').style.display = 'inline';
