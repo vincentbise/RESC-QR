@@ -6,21 +6,63 @@ class StudentViewController extends Controller {
         $this->requireAuth(['student', 'admin', 'mayor']);
     }
 
-    public function index() {
+    /**
+     * Load a hardcoded class_mayor record mapped to student view fields.
+     */
+    private function getMayorAsStudent($mayorId) {
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
-        $stmt->execute([':id' => getUserId()]);
-        $student = $stmt->fetch();
-
-        $stmt2 = $db->prepare(
-            "SELECT ss.status, e.event_type, e.event_datetime
-             FROM student_status ss
-             JOIN emergency_event e ON ss.event_id = e.event_id
-             WHERE ss.student_id = :sid AND e.status = 'Active'
-             ORDER BY e.event_datetime DESC LIMIT 1"
+        $stmt = $db->prepare(
+            "SELECT cm.*, c.section_name, c.program, c.year_level
+             FROM class_mayor cm
+             JOIN class c ON cm.class_id = c.class_id
+             WHERE cm.mayor_id = :id"
         );
-        $stmt2->execute([':sid' => getUserId()]);
-        $status = $stmt2->fetch();
+        $stmt->execute([':id' => $mayorId]);
+        $mayor = $stmt->fetch();
+        if (!$mayor) {
+            return false;
+        }
+
+        $nameParts = explode(' ', $mayor['name'] ?? '', 2);
+        return [
+            'student_id'    => $mayor['mayor_id'],
+            'first_name'    => $nameParts[0] ?? '',
+            'last_name'     => $nameParts[1] ?? '',
+            'email'         => $mayor['email'],
+            'phone'         => $mayor['phone'] ?? '',
+            'course'        => $mayor['program'] ?? '',
+            'year_level'    => $mayor['year_level'] ?? '',
+            'class_id'      => $mayor['class_id'],
+            'qr_code_value' => 'RESCQR-MAYOR-' . $mayor['mayor_id'],
+            'profile_image' => $mayor['profile_image'] ?? null,
+            'created_at'    => $mayor['created_at'],
+            'section_name'  => $mayor['section_name'] ?? '',
+            'program'       => $mayor['program'] ?? '',
+        ];
+    }
+
+    public function index() {
+        $originalRole = getUserOriginalRole();
+
+        if ($originalRole === 'mayor') {
+            $student = $this->getMayorAsStudent(getUserId());
+            $status = false;
+        } else {
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
+            $stmt->execute([':id' => getUserId()]);
+            $student = $stmt->fetch();
+
+            $stmt2 = $db->prepare(
+                "SELECT ss.status, e.event_type, e.event_datetime
+                 FROM student_status ss
+                 JOIN emergency_event e ON ss.event_id = e.event_id
+                 WHERE ss.student_id = :sid AND e.status = 'Active'
+                 ORDER BY e.event_datetime DESC LIMIT 1"
+            );
+            $stmt2->execute([':sid' => getUserId()]);
+            $status = $stmt2->fetch();
+        }
 
         if (!$status) {
             $status = [
@@ -38,10 +80,14 @@ class StudentViewController extends Controller {
     }
 
     public function qrcode() {
-        $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT qr_code_value, first_name, last_name FROM student WHERE student_id = :id");
-        $stmt->execute([':id' => getUserId()]);
-        $student = $stmt->fetch();
+        if (getUserOriginalRole() === 'mayor') {
+            $student = $this->getMayorAsStudent(getUserId());
+        } else {
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("SELECT qr_code_value, first_name, last_name FROM student WHERE student_id = :id");
+            $stmt->execute([':id' => getUserId()]);
+            $student = $stmt->fetch();
+        }
 
         $data = ['pageTitle' => 'My QR Code', 'student' => $student];
         $this->view('layouts/header', $data);
@@ -51,38 +97,11 @@ class StudentViewController extends Controller {
 
     public function profile() {
         $originalRole = getUserOriginalRole();
-        $db = Database::getInstance()->getConnection();
 
         if ($originalRole === 'mayor') {
-            // Mayor profile — load from class_mayor table, map fields to match student view
-            $stmt = $db->prepare(
-                "SELECT cm.*, c.section_name, c.program
-                 FROM class_mayor cm
-                 JOIN class c ON cm.class_id = c.class_id
-                 WHERE cm.mayor_id = :id"
-            );
-            $stmt->execute([':id' => getUserId()]);
-            $mayor = $stmt->fetch();
-
-            // Map mayor fields to student field names so the same view works
-            $nameParts = explode(' ', $mayor['name'] ?? '', 2);
-            $student = [
-                'student_id'    => $mayor['mayor_id'],
-                'first_name'    => $nameParts[0] ?? '',
-                'last_name'     => $nameParts[1] ?? '',
-                'email'         => $mayor['email'],
-                'phone'         => $mayor['phone'] ?? '',
-                'course'        => '',
-                'year_level'    => '',
-                'class_id'      => $mayor['class_id'],
-                'qr_code_value' => null,
-                'profile_image' => $mayor['profile_image'] ?? null,
-                'created_at'    => $mayor['created_at'],
-                'section_name'  => $mayor['section_name'] ?? '',
-                'program'       => $mayor['program'] ?? '',
-            ];
+            $student = $this->getMayorAsStudent(getUserId());
         } else {
-            // Student profile
+            $db = Database::getInstance()->getConnection();
             $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
             $stmt->execute([':id' => getUserId()]);
             $student = $stmt->fetch();
