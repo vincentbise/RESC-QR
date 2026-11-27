@@ -101,6 +101,7 @@ class UserPermission extends Model {
                 JOIN class c ON s.class_id = c.class_id
                 LEFT JOIN user_permissions p ON p.user_type = 'student' AND p.user_id = s.student_id
                 WHERE s.profile_status = 'Active'
+                  AND NOT EXISTS (SELECT 1 FROM class_mayor cm2 WHERE cm2.student_id = s.student_id)
 
                 ORDER BY CASE WHEN user_type = 'admin' THEN 0 ELSE 1 END, sort_name ASC";
 

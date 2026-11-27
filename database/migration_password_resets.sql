@@ -1,5 +1,3 @@
--- Creates the table required by the forgot-password OTP flow.
--- Safe to run against an existing database.
 USE `resc_qr`;
 
 CREATE TABLE IF NOT EXISTS `password_resets` (

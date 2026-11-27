@@ -1,31 +1,8 @@
--- ============================================================
--- RESC-QR Database Migration v2 (NEW OBJECTS ONLY)
--- Remove all sections that already exist in your database
--- ============================================================
-
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+08:00";
 
 USE `resc_qr`;
 
--- ============================================================
--- 1. ENUM MIGRATION: 'Missing' → 'Not Yet Scanned'
--- (Only if not already done)
--- ============================================================
--- Check if 'Not Yet Scanned' already exists in ENUM
--- ALTER TABLE `student_status`
---   MODIFY COLUMN `status` ENUM('Safe', 'Missing', 'Not Yet Scanned', 'Absent')
---   NOT NULL DEFAULT 'Not Yet Scanned';
--- UPDATE `student_status` SET `status` = 'Not Yet Scanned' WHERE `status` = 'Missing';
--- ALTER TABLE `student_status`
---   MODIFY COLUMN `status` ENUM('Safe', 'Not Yet Scanned', 'Absent')
---   NOT NULL DEFAULT 'Not Yet Scanned';
-
--- ============================================================
--- 2. NEW VIEWS (if they don't exist)
--- ============================================================
-
--- vw_student_full_status: student + latest status + class + emergency contact
 CREATE OR REPLACE VIEW `vw_student_full_status` AS
 SELECT
     s.`student_id`,
@@ -71,7 +48,6 @@ LEFT JOIN (
     ) ec2 ON ec1.`student_id` = ec2.`student_id` AND ec1.`contact_id` = ec2.`min_contact_id`
 ) ec ON s.`student_id` = ec.`student_id`;
 
--- vw_scan_log_detailed: comprehensive scan log with all related entity names
 CREATE OR REPLACE VIEW `vw_scan_log_detailed` AS
 SELECT
     q.`scan_id`,
@@ -99,7 +75,6 @@ JOIN `class` c ON s.`class_id` = c.`class_id`
 JOIN `class_mayor` m ON q.`scanned_by` = m.`mayor_id`
 JOIN `emergency_event` e ON q.`event_id` = e.`event_id`;
 
--- vw_active_emergency_summary: active event with all counts and metadata
 CREATE OR REPLACE VIEW `vw_active_emergency_summary` AS
 SELECT
     e.`event_id`,
@@ -118,7 +93,6 @@ FROM `emergency_event` e
 JOIN `admin` a ON e.`created_by` = a.`admin_id`
 LEFT JOIN `vw_event_status_summary` v ON e.`event_id` = v.`event_id`;
 
--- vw_class_attendance_rate: per-class attendance statistics
 CREATE OR REPLACE VIEW `vw_class_attendance_rate` AS
 SELECT
     c.`class_id`,
@@ -140,15 +114,8 @@ LEFT JOIN `student` s ON c.`class_id` = s.`class_id` AND s.`profile_status` = 'A
 LEFT JOIN `attendance` att ON s.`student_id` = att.`student_id`
 GROUP BY c.`class_id`, c.`section_name`, c.`program`, c.`year_level`;
 
--- ============================================================
--- 3. NEW STORED PROCEDURES (all read from views)
--- ============================================================
 DELIMITER $$
 
--- ---------------------------------------------------------
--- sp_get_paginated_students: server-side pagination
--- Reads from: vw_student_full_status (VIEW)
--- ---------------------------------------------------------
 DROP PROCEDURE IF EXISTS `sp_get_paginated_students`$$
 
 CREATE PROCEDURE `sp_get_paginated_students`(
@@ -163,7 +130,6 @@ BEGIN
     SET p_per_page = IFNULL(p_per_page, 10);
     SET v_offset = (p_page - 1) * p_per_page;
 
-    -- Total count for pagination metadata
     SELECT COUNT(*) AS `total_count`
     FROM `vw_student_full_status`
     WHERE `profile_status` = 'Active'
@@ -173,7 +139,6 @@ BEGIN
            `email` LIKE CONCAT('%', p_search, '%'))
       AND (p_class_id IS NULL OR `class_id` = p_class_id);
 
-    -- Paginated results from VIEW
     SELECT
         `student_id`, `first_name`, `last_name`, `email`, `phone`,
         `course`, `year_level`, `qr_code_value`, `profile_image`,
@@ -192,10 +157,6 @@ BEGIN
     LIMIT p_per_page OFFSET v_offset;
 END$$
 
--- ---------------------------------------------------------
--- sp_get_paginated_scan_logs: paginated scan logs
--- Reads from: vw_scan_log_detailed (VIEW)
--- ---------------------------------------------------------
 DROP PROCEDURE IF EXISTS `sp_get_paginated_scan_logs`$$
 
 CREATE PROCEDURE `sp_get_paginated_scan_logs`(
@@ -208,10 +169,8 @@ BEGIN
     SET p_per_page = IFNULL(p_per_page, 10);
     SET v_offset = (p_page - 1) * p_per_page;
 
-    -- Total count
     SELECT COUNT(*) AS `total_count` FROM `vw_scan_log_detailed`;
 
-    -- Paginated results from VIEW
     SELECT
         `scan_id`, `scan_time`, `scan_result`, `student_id`,
         `first_name`, `last_name`, `qr_code_value`, `student_email`,
@@ -222,10 +181,6 @@ BEGIN
     LIMIT p_per_page OFFSET v_offset;
 END$$
 
--- ---------------------------------------------------------
--- sp_get_paginated_events: paginated events
--- Reads from: vw_active_emergency_summary (VIEW)
--- ---------------------------------------------------------
 DROP PROCEDURE IF EXISTS `sp_get_paginated_events`$$
 
 CREATE PROCEDURE `sp_get_paginated_events`(
@@ -238,10 +193,8 @@ BEGIN
     SET p_per_page = IFNULL(p_per_page, 10);
     SET v_offset = (p_page - 1) * p_per_page;
 
-    -- Total count
     SELECT COUNT(*) AS `total_count` FROM `vw_active_emergency_summary`;
 
-    -- Paginated results from VIEW
     SELECT
         `event_id`, `event_type`, `event_datetime`, `description`,
         `status`, `created_by_name`, `created_at`,
@@ -251,10 +204,6 @@ BEGIN
     LIMIT p_per_page OFFSET v_offset;
 END$$
 
--- ---------------------------------------------------------
--- sp_get_paginated_reports: paginated incident reports
--- Reads from: vw_active_emergency_summary (VIEW) joined with incident_report
--- ---------------------------------------------------------
 DROP PROCEDURE IF EXISTS `sp_get_paginated_reports`$$
 
 CREATE PROCEDURE `sp_get_paginated_reports`(
@@ -267,10 +216,8 @@ BEGIN
     SET p_per_page = IFNULL(p_per_page, 10);
     SET v_offset = (p_page - 1) * p_per_page;
 
-    -- Total count
     SELECT COUNT(*) AS `total_count` FROM `incident_report`;
 
-    -- Paginated results — joins with VIEW for event metadata
     SELECT
         r.`report_id`, r.`report_time`, r.`summary_text`,
         r.`total_students`, r.`safe_count`, r.`missing_count`,
@@ -283,11 +230,6 @@ BEGIN
     LIMIT p_per_page OFFSET v_offset;
 END$$
 
--- ---------------------------------------------------------
--- sp_update_student_profile: safe student profile update
--- Validates via: vw_student_full_status (VIEW)
--- Writes to: student (TABLE)
--- ---------------------------------------------------------
 DROP PROCEDURE IF EXISTS `sp_update_student_profile`$$
 
 CREATE PROCEDURE `sp_update_student_profile`(
@@ -303,7 +245,6 @@ BEGIN
     DECLARE v_exists INT DEFAULT 0;
     DECLARE v_email_taken INT DEFAULT 0;
 
-    -- Validate student exists using VIEW (security: no direct table access)
     SELECT COUNT(*) INTO v_exists
     FROM `vw_student_full_status`
     WHERE `student_id` = p_student_id;

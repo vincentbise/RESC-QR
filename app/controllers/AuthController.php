@@ -386,6 +386,7 @@ class AuthController extends Controller {
         $userName     = null;
         $userRole     = null;
         $userAvatar   = null;
+        $studentId    = null;
         $emailExists  = false;
 
         $admin = $this->adminModel->findByEmail($email);
@@ -403,9 +404,11 @@ class AuthController extends Controller {
             if ($mayor) {
                 $emailExists = true;
                 if (password_verify($password, $mayor['password_hash'])) {
-                    $userId   = $mayor['mayor_id'];
-                    $userName = $mayor['name'];
-                    $userRole = 'mayor';
+                    $userId     = $mayor['mayor_id'];
+                    $userName   = $mayor['name'];
+                    $userRole   = 'mayor';
+                    $userAvatar = $mayor['profile_image'] ?? null;
+                    $studentId  = $mayor['student_id'] ?? null;
                     $_SESSION['class_id']     = $mayor['class_id'];
                     $_SESSION['section_name'] = $mayor['section_name'];
                 }
@@ -420,10 +423,11 @@ class AuthController extends Controller {
             if ($student) {
                 $emailExists = true;
                 if (password_verify($password, $student['password_hash'] ?? '')) {
-                    $userId   = $student['student_id'];
-                    $userName = $student['first_name'] . ' ' . $student['last_name'];
-                    $userRole = 'student';
+                    $userId     = $student['student_id'];
+                    $userName   = $student['first_name'] . ' ' . $student['last_name'];
+                    $userRole   = 'student';
                     $userAvatar = $student['profile_image'] ?? null;
+                    $studentId  = $student['student_id'];
                 }
             }
         }
@@ -436,6 +440,11 @@ class AuthController extends Controller {
             $_SESSION['user_name'] = $userName;
             $_SESSION['user_avatar'] = $userAvatar ?? null;
             $_SESSION['user_original_role'] = $userRole;
+            if ($studentId !== null) {
+                $_SESSION['student_id'] = (int)$studentId;
+            } else {
+                unset($_SESSION['student_id']);
+            }
 
             // === RBAC role override ===
             // Check user_permissions to see if the effective role should change

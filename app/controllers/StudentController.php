@@ -175,6 +175,21 @@ class StudentController extends Controller {
 
         $this->studentModel->updateStudent($id, $data);
 
+        // Sync linked class_mayor record if this student is a class_mayor
+        $updatedStudent = $this->studentModel->findStudentById($id);
+        if ($updatedStudent) {
+            $db = Database::getInstance()->getConnection();
+            $db->prepare(
+                "UPDATE class_mayor SET name = :name, email = :email, phone = :phone, class_id = :cid WHERE student_id = :sid"
+            )->execute([
+                ':name'  => $updatedStudent['first_name'] . ' ' . $updatedStudent['last_name'],
+                ':email' => $updatedStudent['email'],
+                ':phone' => $updatedStudent['phone'],
+                ':cid'   => $updatedStudent['class_id'],
+                ':sid'   => $id,
+            ]);
+        }
+
         if ($this->isAjax()) {
             $student = $this->studentModel->findStudentById($id);
             $this->json(['success' => true, 'message' => 'Student updated successfully.', 'student' => $student]);

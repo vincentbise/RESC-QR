@@ -87,24 +87,26 @@ class Student extends Model {
     }
 
     public function emailExists($email, $excludeId = null) {
-        $queries = [
-            "SELECT 1 FROM admin WHERE LOWER(email) = LOWER(:admin_email)",
-            "SELECT 1 FROM class_mayor WHERE LOWER(email) = LOWER(:mayor_email)",
-        ];
+        $mayorQuery = "SELECT 1 FROM class_mayor WHERE LOWER(email) = LOWER(:mayor_email)";
+        $studentQuery = "SELECT 1 FROM student WHERE LOWER(email) = LOWER(:student_email)";
         $params = [
-            ':admin_email' => $email,
-            ':mayor_email' => $email,
+            ':admin_email'   => $email,
+            ':mayor_email'   => $email,
             ':student_email' => $email,
         ];
 
-        $studentQuery = "SELECT 1 FROM student WHERE LOWER(email) = LOWER(:student_email)";
-
         if ($excludeId !== null) {
+            $mayorQuery .= " AND (student_id IS NULL OR student_id != :mayor_exclude_id)";
             $studentQuery .= " AND student_id != :exclude_id";
+            $params[':mayor_exclude_id'] = $excludeId;
             $params[':exclude_id'] = $excludeId;
         }
 
-        $queries[] = $studentQuery;
+        $queries = [
+            "SELECT 1 FROM admin WHERE LOWER(email) = LOWER(:admin_email)",
+            $mayorQuery,
+            $studentQuery,
+        ];
         $stmt = $this->query(implode(' UNION ALL ', $queries) . ' LIMIT 1', $params);
 
         return (bool) $stmt->fetchColumn();

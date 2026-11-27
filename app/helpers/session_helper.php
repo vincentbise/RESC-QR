@@ -24,6 +24,27 @@ function getUserOriginalRole() {
     return $_SESSION['user_original_role'] ?? $_SESSION['user_role'] ?? '';
 }
 
+function getStudentId() {
+    if (!empty($_SESSION['student_id'])) {
+        return $_SESSION['student_id'];
+    }
+    $userId = getUserId();
+    if (!$userId) {
+        return null;
+    }
+    if (getUserOriginalRole() === 'mayor') {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("SELECT student_id FROM class_mayor WHERE mayor_id = :id LIMIT 1");
+        $stmt->execute([':id' => $userId]);
+        $sid = $stmt->fetchColumn();
+        if ($sid) {
+            $_SESSION['student_id'] = (int)$sid;
+            return (int)$sid;
+        }
+    }
+    return $userId;
+}
+
 function generateCSRFToken() {
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

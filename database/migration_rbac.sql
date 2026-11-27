@@ -1,8 +1,3 @@
--- ============================================================
--- RBAC Migration: User Permissions Table
--- Run this on a fresh database to create the RBAC system.
--- ============================================================
-
 CREATE TABLE IF NOT EXISTS `user_permissions` (
     `permission_id`          INT             NOT NULL AUTO_INCREMENT,
     `user_type`              ENUM('admin','mayor','student') NOT NULL,

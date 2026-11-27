@@ -47,9 +47,19 @@ class EmergencyEvent extends Model {
         $this->query(
             "INSERT IGNORE INTO student_status (student_id, event_id, status)
              SELECT s.student_id, e.event_id,
-                      CASE WHEN a.status = 'Absent' THEN 'Absent' ELSE 'Not Yet Scanned' END
+                    CASE
+                        WHEN (cm.mayor_id IS NOT NULL AND COALESCE(up_m.is_mayor, 1) = 1)
+                          OR COALESCE(up_s.is_mayor, 0) = 1
+                            THEN 'Safe'
+                        WHEN a.status = 'Absent'
+                            THEN 'Absent'
+                        ELSE 'Not Yet Scanned'
+                    END
              FROM student s
              JOIN emergency_event e ON e.event_id = :eid
+             LEFT JOIN class_mayor cm ON cm.student_id = s.student_id
+             LEFT JOIN user_permissions up_m ON up_m.user_type = 'mayor' AND up_m.user_id = cm.mayor_id
+             LEFT JOIN user_permissions up_s ON up_s.user_type = 'student' AND up_s.user_id = s.student_id
              LEFT JOIN attendance a
                 ON a.student_id = s.student_id
                AND a.date = DATE(e.event_datetime)

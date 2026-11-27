@@ -6,63 +6,22 @@ class StudentViewController extends Controller {
         $this->requireAuth(['student', 'admin', 'mayor']);
     }
 
-    /**
-     * Load a hardcoded class_mayor record mapped to student view fields.
-     */
-    private function getMayorAsStudent($mayorId) {
-        $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare(
-            "SELECT cm.*, c.section_name, c.program, c.year_level
-             FROM class_mayor cm
-             JOIN class c ON cm.class_id = c.class_id
-             WHERE cm.mayor_id = :id"
-        );
-        $stmt->execute([':id' => $mayorId]);
-        $mayor = $stmt->fetch();
-        if (!$mayor) {
-            return false;
-        }
-
-        $nameParts = explode(' ', $mayor['name'] ?? '', 2);
-        return [
-            'student_id'    => $mayor['mayor_id'],
-            'first_name'    => $nameParts[0] ?? '',
-            'last_name'     => $nameParts[1] ?? '',
-            'email'         => $mayor['email'],
-            'phone'         => $mayor['phone'] ?? '',
-            'course'        => $mayor['program'] ?? '',
-            'year_level'    => $mayor['year_level'] ?? '',
-            'class_id'      => $mayor['class_id'],
-            'qr_code_value' => 'RESCQR-MAYOR-' . $mayor['mayor_id'],
-            'profile_image' => $mayor['profile_image'] ?? null,
-            'created_at'    => $mayor['created_at'],
-            'section_name'  => $mayor['section_name'] ?? '',
-            'program'       => $mayor['program'] ?? '',
-        ];
-    }
-
     public function index() {
-        $originalRole = getUserOriginalRole();
+        $studentId = getStudentId();
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
+        $stmt->execute([':id' => $studentId]);
+        $student = $stmt->fetch();
 
-        if ($originalRole === 'mayor') {
-            $student = $this->getMayorAsStudent(getUserId());
-            $status = false;
-        } else {
-            $db = Database::getInstance()->getConnection();
-            $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
-            $stmt->execute([':id' => getUserId()]);
-            $student = $stmt->fetch();
-
-            $stmt2 = $db->prepare(
-                "SELECT ss.status, e.event_type, e.event_datetime
-                 FROM student_status ss
-                 JOIN emergency_event e ON ss.event_id = e.event_id
-                 WHERE ss.student_id = :sid AND e.status = 'Active'
-                 ORDER BY e.event_datetime DESC LIMIT 1"
-            );
-            $stmt2->execute([':sid' => getUserId()]);
-            $status = $stmt2->fetch();
-        }
+        $stmt2 = $db->prepare(
+            "SELECT ss.status, e.event_type, e.event_datetime
+             FROM student_status ss
+             JOIN emergency_event e ON ss.event_id = e.event_id
+             WHERE ss.student_id = :sid AND e.status = 'Active'
+             ORDER BY e.event_datetime DESC LIMIT 1"
+        );
+        $stmt2->execute([':sid' => $studentId]);
+        $status = $stmt2->fetch();
 
         if (!$status) {
             $status = [
@@ -80,14 +39,11 @@ class StudentViewController extends Controller {
     }
 
     public function qrcode() {
-        if (getUserOriginalRole() === 'mayor') {
-            $student = $this->getMayorAsStudent(getUserId());
-        } else {
-            $db = Database::getInstance()->getConnection();
-            $stmt = $db->prepare("SELECT qr_code_value, first_name, last_name FROM student WHERE student_id = :id");
-            $stmt->execute([':id' => getUserId()]);
-            $student = $stmt->fetch();
-        }
+        $studentId = getStudentId();
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("SELECT qr_code_value, first_name, last_name FROM student WHERE student_id = :id");
+        $stmt->execute([':id' => $studentId]);
+        $student = $stmt->fetch();
 
         $data = ['pageTitle' => 'My QR Code', 'student' => $student];
         $this->view('layouts/header', $data);
@@ -96,16 +52,11 @@ class StudentViewController extends Controller {
     }
 
     public function profile() {
-        $originalRole = getUserOriginalRole();
-
-        if ($originalRole === 'mayor') {
-            $student = $this->getMayorAsStudent(getUserId());
-        } else {
-            $db = Database::getInstance()->getConnection();
-            $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
-            $stmt->execute([':id' => getUserId()]);
-            $student = $stmt->fetch();
-        }
+        $studentId = getStudentId();
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare("SELECT s.*, c.section_name, c.program FROM student s JOIN class c ON s.class_id = c.class_id WHERE s.student_id = :id");
+        $stmt->execute([':id' => $studentId]);
+        $student = $stmt->fetch();
 
         require_once ROOT_PATH . '/app/models/ClassModel.php';
         $classModel = new ClassModel();
@@ -125,87 +76,9 @@ class StudentViewController extends Controller {
 
         $this->validateCSRF();
 
-        $id           = getUserId();
+        $id           = getStudentId();
         $originalRole = getUserOriginalRole();
 
-        // ---- MAYOR UPDATE (hardcoded class_mayor only) ----
-        if ($originalRole === 'mayor') {
-            $db = Database::getInstance()->getConnection();
-
-            $firstName = InputValidator::validateName($_POST['first_name'] ?? '');
-            $lastName  = InputValidator::validateName($_POST['last_name'] ?? '');
-            $email     = InputValidator::validateEmail($_POST['email'] ?? '') ?: null;
-            $phone     = InputValidator::sanitizeString($_POST['phone'] ?? '');
-
-            if (empty($firstName) || empty($lastName)) {
-                $this->json(['success' => false, 'message' => 'First name and last name are required.'], 422);
-                return;
-            }
-
-            $name = $firstName . ' ' . $lastName;
-
-            // Check email uniqueness among mayors
-            if ($email) {
-                $stmt = $db->prepare("SELECT mayor_id FROM class_mayor WHERE email = :email AND mayor_id != :id");
-                $stmt->execute([':email' => $email, ':id' => $id]);
-                if ($stmt->fetch()) {
-                    $this->json([
-                        'success' => false,
-                        'message' => 'This email is already in use.',
-                        'errors'  => ['email' => 'This email is already in use.'],
-                    ], 422);
-                    return;
-                }
-            }
-
-            // Handle profile image
-            $profileImagesDir = ROOT_PATH . '/public/img/profiles';
-            $stmtCur = $db->prepare("SELECT profile_image FROM class_mayor WHERE mayor_id = :id");
-            $stmtCur->execute([':id' => $id]);
-            $cur = $stmtCur->fetch();
-            $oldImage = $cur['profile_image'] ?? null;
-            $newImage = $oldImage;
-
-            if (!empty($_POST['remove_profile_image'])) {
-                $newImage = null;
-                if ($oldImage && is_file($profileImagesDir . '/' . basename($oldImage))) {
-                    @unlink($profileImagesDir . '/' . basename($oldImage));
-                }
-            }
-
-            if (!empty($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-                $result = InputValidator::handleImageUpload($_FILES['profile_image'], $profileImagesDir);
-                if (is_array($result) && isset($result['error'])) {
-                    $this->json(['success' => false, 'message' => $result['error']], 422);
-                    return;
-                }
-                if ($result) {
-                    $newImage = $result;
-                    if ($oldImage && is_file($profileImagesDir . '/' . basename($oldImage))) {
-                        @unlink($profileImagesDir . '/' . basename($oldImage));
-                    }
-                }
-            }
-
-            $stmt = $db->prepare("UPDATE class_mayor SET name = :name, email = :email, phone = :phone, profile_image = :img WHERE mayor_id = :id");
-            $stmt->execute([':name' => $name, ':email' => $email, ':phone' => $phone, ':img' => $newImage, ':id' => $id]);
-
-            $_SESSION['user_name']   = $name;
-            $_SESSION['user_avatar'] = $newImage;
-
-            $this->json([
-                'success' => true,
-                'message' => 'Profile updated successfully.',
-                'student' => [
-                    'first_name'    => $firstName,
-                    'last_name'     => $lastName,
-                    'profile_image' => $newImage,
-                ],
-            ]);
-            return;
-        }
-
-        // ---- STUDENT UPDATE ----
         require_once ROOT_PATH . '/app/models/Student.php';
         $studentModel = new Student();
         $currentStudent = $studentModel->findStudentById($id);
@@ -277,6 +150,29 @@ class StudentViewController extends Controller {
 
         $studentModel->updateStudent($id, $data);
 
+        // Keep linked class_mayor record in sync when applicable
+        if ($originalRole === 'mayor') {
+            $db = Database::getInstance()->getConnection();
+            $mayorFields = [
+                'name'  => ($data['first_name'] ?? $currentStudent['first_name']) . ' ' . ($data['last_name'] ?? $currentStudent['last_name']),
+                'email' => $data['email'] ?? $currentStudent['email'],
+                'phone' => $data['phone'] ?? $currentStudent['phone'],
+            ];
+            if (array_key_exists('profile_image', $data)) {
+                $mayorFields['profile_image'] = $data['profile_image'];
+            }
+            if (isset($data['class_id'])) {
+                $mayorFields['class_id'] = $data['class_id'];
+            }
+            $sets = [];
+            $params = [':mid' => getUserId()];
+            foreach ($mayorFields as $k => $v) {
+                $sets[] = "`$k` = :$k";
+                $params[":$k"] = $v;
+            }
+            $db->prepare("UPDATE class_mayor SET " . implode(', ', $sets) . " WHERE mayor_id = :mid")->execute($params);
+        }
+
         if (array_key_exists('profile_image', $data)) {
             $_SESSION['user_avatar'] = $data['profile_image'];
         }
@@ -322,18 +218,12 @@ class StudentViewController extends Controller {
             return;
         }
 
-        $id           = getUserId();
+        $studentId    = getStudentId();
         $originalRole = getUserOriginalRole();
         $db           = Database::getInstance()->getConnection();
 
-        // Load current hash based on original account table
-        if ($originalRole === 'mayor') {
-            $stmt = $db->prepare("SELECT password_hash FROM class_mayor WHERE mayor_id = :id");
-            $stmt->execute([':id' => $id]);
-        } else {
-            $stmt = $db->prepare("SELECT password_hash FROM student WHERE student_id = :id");
-            $stmt->execute([':id' => $id]);
-        }
+        $stmt = $db->prepare("SELECT password_hash FROM student WHERE student_id = :id");
+        $stmt->execute([':id' => $studentId]);
         $current = $stmt->fetch();
 
         if (!$current || !password_verify($currentPassword, $current['password_hash'] ?? '')) {
@@ -354,12 +244,13 @@ class StudentViewController extends Controller {
 
         $newHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
 
+        $stmt = $db->prepare("UPDATE student SET password_hash = :hash WHERE student_id = :id");
+        $stmt->execute([':hash' => $newHash, ':id' => $studentId]);
+
         if ($originalRole === 'mayor') {
-            $stmt = $db->prepare("UPDATE class_mayor SET password_hash = :hash WHERE mayor_id = :id");
-        } else {
-            $stmt = $db->prepare("UPDATE student SET password_hash = :hash WHERE student_id = :id");
+            $stmtMayor = $db->prepare("UPDATE class_mayor SET password_hash = :hash WHERE mayor_id = :id");
+            $stmtMayor->execute([':hash' => $newHash, ':id' => getUserId()]);
         }
-        $stmt->execute([':hash' => $newHash, ':id' => $id]);
 
         $this->json(['success' => true, 'message' => 'Password changed successfully.']);
     }
