@@ -32,7 +32,6 @@
                     <tr>
                         <th class="col-user">User</th>
                         <th class="col-role">Role</th>
-                        <th class="col-mayor">Mayor</th>
                         <?php foreach ($permissions as $key => $label): ?>
                             <th class="col-perm" title="<?= e($label) ?>">
                                 <span class="perm-header"><?= e($label) ?></span>
@@ -44,7 +43,7 @@
                 <tbody id="rbacTableBody">
                     <?php if (empty($users)): ?>
                         <tr>
-                            <td colspan="<?= 4 + count($permissions) ?>" class="text-center text-muted" style="padding:40px;">No users found</td>
+                            <td colspan="<?= 3 + count($permissions) ?>" class="text-center text-muted" style="padding:40px;">No users found</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($users as $user):
@@ -74,6 +73,7 @@
                         ?>
                             <tr class="user-row" 
                                 data-user-type="<?= e($user['user_type']) ?>"
+                                data-effective-role="<?= e($effectiveRole) ?>"
                                 data-user-id="<?= e($user['user_id']) ?>"
                                 data-name="<?= e(strtolower($user['name'])) ?>"
                                 data-email="<?= e(strtolower($user['email'] ?? '')) ?>">
@@ -97,21 +97,6 @@
                                     </span>
                                     <?php if ($effectiveRole !== $user['user_type']): ?>
                                         <div class="role-override"><?= $mayorChecked ? 'Promoted' : 'Demoted' ?></div>
-                                    <?php endif; ?>
-                                </td>
-
-                                <!-- Is Mayor Toggle -->
-                                <td class="col-mayor" data-label="Mayor">
-                                    <?php if ($isAdmin): ?>
-                                        <span class="mayor-na">—</span>
-                                    <?php else: ?>
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" class="mayor-toggle"
-                                                   data-user-type="<?= e($user['user_type']) ?>"
-                                                   data-user-id="<?= e($user['user_id']) ?>"
-                                                   <?= $mayorChecked ? 'checked' : '' ?>>
-                                            <span class="toggle-slider"></span>
-                                        </label>
                                     <?php endif; ?>
                                 </td>
 
@@ -171,16 +156,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const ROWS_PER_PAGE = 10;
     let currentPage = 1;
 
-    const mayorDefaults = <?= json_encode(\UserPermission::MAYOR_DEFAULTS) ?>;
-
     // ---- Store original state for each row ----
     const originalStates = {};
 
     document.querySelectorAll('.user-row').forEach(function(row) {
         const key = row.dataset.userType + '-' + row.dataset.userId;
         const state = {};
-        const mt = row.querySelector('.mayor-toggle');
-        state.is_mayor = mt ? mt.checked : false;
         row.querySelectorAll('.perm-check').forEach(function(cb) {
             state[cb.name] = cb.checked;
         });
@@ -191,9 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const key = row.dataset.userType + '-' + row.dataset.userId;
         const orig = originalStates[key];
         if (!orig) return true;
-
-        const mt = row.querySelector('.mayor-toggle');
-        if (mt && mt.checked !== orig.is_mayor) return true;
 
         var dirty = false;
         row.querySelectorAll('.perm-check').forEach(function(cb) {
@@ -214,61 +192,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function snapshotRow(row) {
         const key = row.dataset.userType + '-' + row.dataset.userId;
         const state = {};
-        const mt = row.querySelector('.mayor-toggle');
-        state.is_mayor = mt ? mt.checked : false;
         row.querySelectorAll('.perm-check').forEach(function(cb) {
             state[cb.name] = cb.checked;
         });
         originalStates[key] = state;
     }
-
-    // ---- Mayor toggle handler ----
-    document.querySelectorAll('.mayor-toggle').forEach(function(toggle) {
-        toggle.addEventListener('change', function() {
-            const row = this.closest('tr');
-            const isChecked = this.checked;
-            const userType = this.dataset.userType;
-
-            if (isChecked) {
-                Object.keys(mayorDefaults).forEach(function(key) {
-                    const cb = row.querySelector('.perm-check[name="' + key + '"]');
-                    if (cb) cb.checked = !!mayorDefaults[key];
-                });
-            } else {
-                row.querySelectorAll('.perm-check').forEach(function(cb) {
-                    cb.checked = false;
-                });
-            }
-
-            var badge = row.querySelector('.role-badge');
-            var overrideEl = row.querySelector('.role-override');
-            var effectiveRole;
-
-            if (userType === 'mayor' && !isChecked) {
-                effectiveRole = 'student';
-            } else if (userType === 'student' && isChecked) {
-                effectiveRole = 'mayor';
-            } else {
-                effectiveRole = userType;
-            }
-
-            badge.className = 'role-badge role-' + effectiveRole;
-            badge.textContent = effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1);
-
-            if (effectiveRole !== userType) {
-                if (!overrideEl) {
-                    overrideEl = document.createElement('div');
-                    overrideEl.className = 'role-override';
-                    badge.parentNode.appendChild(overrideEl);
-                }
-                overrideEl.textContent = isChecked ? 'Promoted' : 'Demoted';
-            } else if (overrideEl) {
-                overrideEl.remove();
-            }
-
-            updateRowDirty(row);
-        });
-    });
 
     // Permission checkbox change
     document.querySelectorAll('.perm-check').forEach(function(cb) {
@@ -318,24 +246,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const saveBtn  = this;
             const userName = row.querySelector('.user-name').textContent;
 
-            var roleMsg = '';
-            const mayorToggle = row.querySelector('.mayor-toggle');
-            if (mayorToggle) {
-                var original = row.dataset.userType;
-                if (original === 'student' && mayorToggle.checked) {
-                    roleMsg = 'This will <strong>promote</strong> this student to Mayor on next login.';
-                } else if (original === 'mayor' && !mayorToggle.checked) {
-                    roleMsg = 'This will <strong>demote</strong> this mayor to Student on next login.';
-                }
-            }
-
-            const confirmed = await showConfirmModal(userName, roleMsg);
+            const confirmed = await showConfirmModal(userName, '');
             if (!confirmed) return;
 
             const data = {
                 user_type: userType,
-                user_id: parseInt(userId),
-                is_mayor: mayorToggle ? (mayorToggle.checked ? 1 : 0) : 0,
+                user_id: parseInt(userId)
             };
 
             row.querySelectorAll('.perm-check').forEach(function(cb) {
@@ -398,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
         allRows.forEach(function(row) {
             const name  = row.dataset.name || '';
             const email = row.dataset.email || '';
-            const type  = row.dataset.userType;
+            const type  = row.dataset.effectiveRole || row.dataset.userType;
 
             const matchSearch = !query || name.includes(query) || email.includes(query);
             const matchRole   = !activeRole || type === activeRole;

@@ -40,8 +40,12 @@
                 <div class="form-group">
                     <label for="course">Course *</label>
                     <select class="form-control" id="course" name="course" required>
-                        <?php foreach (['BSIT','BSCS','BSIS','BSEd','BSBA'] as $c): ?>
-                            <option value="<?= $c ?>" <?= $student['course'] === $c ? 'selected' : '' ?>><?= $c ?></option>
+                        <?php foreach ($courses as $co): ?>
+                            <option value="<?= e($co['course_code']) ?>"
+                                    data-course-id="<?= (int)$co['course_id'] ?>"
+                                    <?= $student['course'] === $co['course_code'] ? 'selected' : '' ?>>
+                                <?= e($co['course_name']) ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -106,6 +110,51 @@
 
     emailInput.addEventListener('input', clearEmailError);
 
+    const courseEl = document.getElementById('course');
+    const yearEl   = document.getElementById('year_level');
+    const classEl  = document.getElementById('class_id');
+    const allClasses = <?= json_encode($classes) ?>;
+
+    function filterClasses(preserveSelected) {
+        const selectedOpt = courseEl.options[courseEl.selectedIndex];
+        const courseId = selectedOpt ? (selectedOpt.dataset.courseId || '') : '';
+        const program  = selectedOpt ? selectedOpt.textContent.trim() : '';
+        const year     = yearEl.value;
+        const currentVal = preserveSelected ? preserveSelected : classEl.value;
+
+        classEl.innerHTML = '';
+        const matched = allClasses.filter(c =>
+            (courseId ? String(c.course_id) === String(courseId) : c.program === program)
+            && c.year_level === year
+        );
+
+        if (!matched.length) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No classes available for this selection';
+            classEl.appendChild(opt);
+            return;
+        }
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select Class/Section';
+        classEl.appendChild(placeholder);
+
+        matched.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.class_id;
+            opt.textContent = c.section_name + ' — ' + c.program;
+            if (String(c.class_id) === String(currentVal)) {
+                opt.selected = true;
+            }
+            classEl.appendChild(opt);
+        });
+    }
+
+    // Initialize filtered class list before snapshotting original values
+    filterClasses(<?= json_encode($student['class_id']) ?>);
+
     // Snapshot original values on page load
     const originalValues = {};
     form.querySelectorAll('input:not([type="hidden"]):not([disabled]), select').forEach(el => {
@@ -131,6 +180,9 @@
         }
     }
 
+    courseEl.addEventListener('change', () => { filterClasses(); checkDirty(); });
+    yearEl.addEventListener('change', () => { filterClasses(); checkDirty(); });
+
     // Watch all editable fields
     form.querySelectorAll('input:not([type="hidden"]):not([disabled]), select').forEach(el => {
         el.addEventListener('input',  checkDirty);
@@ -142,6 +194,7 @@
         form.querySelectorAll('input:not([type="hidden"]):not([disabled]), select').forEach(el => {
             if (originalValues[el.name] !== undefined) el.value = originalValues[el.name];
         });
+        filterClasses(originalValues['class_id']);
         checkDirty();
         App.toast('Changes discarded.', 'info');
     });

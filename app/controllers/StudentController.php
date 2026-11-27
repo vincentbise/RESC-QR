@@ -57,8 +57,10 @@ class StudentController extends Controller {
     }
 
     public function create() {
+        $courseModel = $this->model('CourseModel');
         $classes = $this->classModel->getAll();
-        $data = ['pageTitle' => 'Add Student', 'classes' => $classes];
+        $courses = $courseModel->getAll();
+        $data = ['pageTitle' => 'Add Student', 'classes' => $classes, 'courses' => $courses];
 
         $this->view('layouts/header', $data);
         $this->view('admin/students/create', $data);
@@ -113,6 +115,13 @@ class StudentController extends Controller {
             'class_id'   => $classId,
         ]);
 
+        // If an emergency event is currently active, initialize status for the new student
+        $eventModel = $this->model('EmergencyEvent');
+        $activeEvent = $eventModel->getActiveEvent();
+        if ($activeEvent) {
+            $eventModel->initializeStatuses($activeEvent['event_id']);
+        }
+
         if ($this->isAjax()) {
             $student = $this->studentModel->findStudentById($id);
             $this->json(['success' => true, 'message' => 'Student registered successfully.', 'student' => $student]);
@@ -130,8 +139,10 @@ class StudentController extends Controller {
         $student = $this->studentModel->findStudentById($id);
         if (!$student) { $this->redirect('/student'); return; }
 
+        $courseModel = $this->model('CourseModel');
         $classes = $this->classModel->getAll();
-        $data = ['pageTitle' => 'Edit Student', 'student' => $student, 'classes' => $classes];
+        $courses = $courseModel->getAll();
+        $data = ['pageTitle' => 'Edit Student', 'student' => $student, 'classes' => $classes, 'courses' => $courses];
 
         $this->view('layouts/header', $data);
         $this->view('admin/students/edit', $data);

@@ -40,11 +40,11 @@
                     <label for="course">Course *</label>
                     <select class="form-control" id="course" name="course" required>
                         <option value="">Select Course</option>
-                        <option value="BSIT">BS Information Technology</option>
-                        <option value="BSCS">BS Computer Science</option>
-                        <option value="BSIS">BS Information Systems</option>
-                        <option value="BSEd">BS Education</option>
-                        <option value="BSBA">BS Business Administration</option>
+                        <?php foreach ($courses as $co): ?>
+                            <option value="<?= e($co['course_code']) ?>" data-course-id="<?= (int)$co['course_id'] ?>">
+                                <?= e($co['course_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
@@ -61,11 +61,8 @@
 
             <div class="form-group">
                 <label for="class_id">Assign to Class *</label>
-                <select class="form-control" id="class_id" name="class_id" required>
-                    <option value="">Select Class/Section</option>
-                    <?php foreach ($classes as $c): ?>
-                        <option value="<?= e($c['class_id']) ?>"><?= e($c['section_name'] . ' — ' . $c['program']) ?></option>
-                    <?php endforeach; ?>
+                <select class="form-control" id="class_id" name="class_id" required disabled>
+                    <option value="">Select Course and Year Level first</option>
                 </select>
             </div>
 
@@ -81,6 +78,55 @@
 </div>
 
 <script>
+(function () {
+    const allClasses = <?= json_encode($classes) ?>;
+
+    const courseEl = document.getElementById('course');
+    const yearEl   = document.getElementById('year_level');
+    const classEl  = document.getElementById('class_id');
+
+    function updateClassOptions() {
+        const selectedOpt = courseEl.options[courseEl.selectedIndex];
+        const courseId = selectedOpt ? (selectedOpt.dataset.courseId || '') : '';
+        const program  = selectedOpt ? selectedOpt.textContent.trim() : '';
+        const year     = yearEl.value;
+
+        classEl.innerHTML = '';
+
+        if (!courseEl.value || !year) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'Select Course and Year Level first';
+            classEl.appendChild(opt);
+            classEl.disabled = true;
+            return;
+        }
+
+        const matched = allClasses.filter(c =>
+            (courseId ? String(c.course_id) === String(courseId) : c.program === program)
+            && c.year_level === year
+        );
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = matched.length ? 'Select Class/Section' : 'No classes available for this selection';
+        classEl.appendChild(placeholder);
+
+        matched.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.class_id;
+            opt.textContent = c.section_name + ' — ' + c.program;
+            classEl.appendChild(opt);
+        });
+
+        classEl.disabled = matched.length === 0;
+    }
+
+    courseEl.addEventListener('change', updateClassOptions);
+    yearEl.addEventListener('change', updateClassOptions);
+    updateClassOptions();
+})();
+
 document.getElementById('createStudentForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');

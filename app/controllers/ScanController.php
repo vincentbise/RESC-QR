@@ -125,6 +125,7 @@ class ScanController extends Controller {
         $summary = ['safe_count' => 0, 'missing_count' => 0, 'not_in_class_count' => 0, 'total' => 0];
 
         if ($activeEvent) {
+            $this->eventModel->initializeStatuses($activeEvent['event_id']);
             $students = $this->statusModel->getStatusesByEvent($activeEvent['event_id'], $classId);
             $summary  = $this->statusModel->getSummary($activeEvent['event_id'], $classId);
         } else {

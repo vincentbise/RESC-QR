@@ -104,6 +104,9 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
         <?php if ($role === 'admin'): ?>
         <div class="nav-section">
             <div class="nav-section-title">Administration</div>
+            <a href="<?= baseUrl('classroom') ?>" class="nav-link <?= isActive('classroom') ?>">
+                <i class="fas fa-chalkboard-teacher"></i> Classrooms
+            </a>
             <a href="<?= baseUrl('rbac') ?>" class="nav-link <?= isActive('rbac') ?>">
                 <i class="fas fa-user-shield"></i> Access Control
             </a>

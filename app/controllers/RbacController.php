@@ -51,8 +51,14 @@ class RbacController extends Controller {
             return;
         }
 
+        $existing = $this->permModel->getUserPermissions($userType, $userId);
+        $defaultIsMayor = ($userType === 'mayor') ? 1 : 0;
+        $preservedIsMayor = array_key_exists('is_mayor', $input)
+            ? (int)$input['is_mayor']
+            : ($existing ? (int)$existing['is_mayor'] : $defaultIsMayor);
+
         $data = [
-            'is_mayor'               => $input['is_mayor'] ?? 0,
+            'is_mayor'               => $preservedIsMayor,
             'perm_qr_scanner'        => $input['perm_qr_scanner'] ?? 0,
             'perm_generate_report'   => $input['perm_generate_report'] ?? 0,
             'perm_declare_emergency' => $input['perm_declare_emergency'] ?? 0,
