@@ -14,3 +14,19 @@ CREATE TABLE IF NOT EXISTS `password_resets` (
     INDEX `idx_password_resets_email_created` (`email`, `created_at`),
     INDEX `idx_password_resets_expiry` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @col_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'password_resets'
+      AND COLUMN_NAME = 'otp_hash'
+);
+SET @sql = IF(
+    @col_exists = 0,
+    'ALTER TABLE password_resets ADD COLUMN otp_hash VARCHAR(255) NOT NULL AFTER otp_code;',
+    'SELECT 1;'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
