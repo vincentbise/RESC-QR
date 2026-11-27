@@ -8,7 +8,6 @@ class UserPermission extends Model {
         'perm_generate_report'   => 'Reports',
         'perm_declare_emergency' => 'Declare Emergency',
         'perm_qr_codes'          => 'QR Codes',
-        'perm_my_qr'             => 'My QR',
         'perm_student_list_mayor'=> 'Student List',
     ];
 
@@ -18,7 +17,6 @@ class UserPermission extends Model {
         'perm_generate_report'   => 0,
         'perm_declare_emergency' => 0,
         'perm_qr_codes'          => 0,
-        'perm_my_qr'             => 1,
         'perm_student_list_mayor'=> 1,
     ];
 

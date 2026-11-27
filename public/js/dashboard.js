@@ -9,6 +9,7 @@ function startDashboardPolling(intervalMs = 10000) {
                 updateStatCard('statTotal', data.totalStudents);
                 updateStatCard('statSafe', data.safeCount);
                 updateStatCard('statMissing', data.missingCount);
+                document.querySelectorAll('[data-outcome-note]').forEach(n => { n.textContent = data.outcomeNote || ''; });
                 updateStatCard('statEvents', data.activeEvents);
 
                 if (data.recentScans && data.recentScans.length) {
@@ -24,6 +25,15 @@ function startDashboardPolling(intervalMs = 10000) {
 function updateStatCard(id, newValue) {
     const el = document.getElementById(id);
     if (!el) return;
+    // null = not available yet (event still active)
+    if (newValue === null || newValue === undefined) {
+        el.textContent = '—';
+        return;
+    }
+    if (el.textContent === '—') {
+        el.textContent = parseInt(newValue) || 0;
+        return;
+    }
     const oldValue = parseInt(el.textContent) || 0;
     const nv = parseInt(newValue) || 0;
     if (oldValue !== nv) {

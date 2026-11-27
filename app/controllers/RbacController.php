@@ -64,7 +64,7 @@ class RbacController extends Controller {
             'perm_declare_emergency' => $input['perm_declare_emergency'] ?? 0,
             'perm_qr_codes'          => $input['perm_qr_codes'] ?? 0,
             'perm_emergency_hotlines'=> $input['perm_emergency_hotlines'] ?? 0,
-            'perm_my_qr'             => $input['perm_my_qr'] ?? 0,
+            'perm_my_qr'             => 1, // always on; no longer configurable in Access Control
             'perm_student_list_admin'=> $input['perm_student_list_admin'] ?? 0,
             'perm_student_list_mayor'=> $input['perm_student_list_mayor'] ?? 0,
             'updated_by'             => getUserId(),

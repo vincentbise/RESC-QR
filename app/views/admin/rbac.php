@@ -1,32 +1,18 @@
-<!-- Page Title -->
-<div class="rbac-page-title">
-    <i class="fas fa-user-shield"></i> Access Control
-</div>
-
-<!-- Filter Bar -->
-<div class="rbac-filters card">
-    <div class="card-body" style="padding: 14px 20px;">
-        <div class="filter-row">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="rbacSearch" placeholder="Search users..." autocomplete="off">
-            </div>
-            <div class="filter-tabs" id="filterTabs">
-                <button class="filter-tab active" data-role="">All</button>
-                <button class="filter-tab" data-role="admin">Admin</button>
-                <button class="filter-tab" data-role="mayor">Mayor</button>
-                <button class="filter-tab" data-role="student">Student</button>
-            </div>
-            <div class="filter-right">
-                <div class="rbac-pagination" id="rbacPagination"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Users Table -->
 <div class="card rbac-card">
-    <div class="card-body" style="padding:0;">
+    <div class="rbac-toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="rbacSearch" placeholder="Search users..." autocomplete="off">
+        </div>
+        <div class="filter-tabs" id="filterTabs">
+            <button type="button" class="filter-tab active" data-role="">All</button>
+            <button type="button" class="filter-tab" data-role="admin">Admin</button>
+            <button type="button" class="filter-tab" data-role="mayor">Mayor</button>
+            <button type="button" class="filter-tab" data-role="student">Student</button>
+        </div>
+    </div>
+    <div class="rbac-table-wrap">
             <table class="rbac-table">
                 <thead>
                     <tr>
@@ -86,6 +72,9 @@
                                         </div>
                                         <div class="user-details">
                                             <div class="user-name"><?= e($user['name']) ?></div>
+                                            <?php if (!empty($user['email'])): ?>
+                                                <div class="user-email"><?= e($user['email']) ?></div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </td>
@@ -110,8 +99,9 @@
                                         $isChecked = false;
                                     }
                                 ?>
-                                    <td class="col-perm" data-label="<?= e($label) ?>">
-                                        <?php if ($isAdmin && $key !== 'perm_qr_scanner'): ?>
+                                    <?php $na = $isAdmin && $key !== 'perm_qr_scanner'; ?>
+                                    <td class="col-perm<?= $na ? ' perm-na' : '' ?>" data-label="<?= e($label) ?>">
+                                        <?php if ($na): ?>
                                             <span class="mayor-na">—</span>
                                         <?php else: ?>
                                             <label class="perm-checkbox">
@@ -140,6 +130,10 @@
                     <?php endif; ?>
                 </tbody>
             </table>
+    </div>
+    <div class="rbac-footer">
+        <span class="user-count" id="rbacCount"></span>
+        <div class="rbac-pagination" id="rbacPagination"></div>
     </div>
 </div>
 
@@ -343,6 +337,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderPagination(totalPages, totalItems) {
         const container = document.getElementById('rbacPagination');
+        const countEl = document.getElementById('rbacCount');
+        if (totalItems === 0) {
+            countEl.textContent = 'No users found';
+        } else {
+            const from = (currentPage - 1) * ROWS_PER_PAGE + 1;
+            const to = Math.min(currentPage * ROWS_PER_PAGE, totalItems);
+            countEl.textContent = 'Showing ' + from + '–' + to + ' of ' + totalItems + ' users';
+        }
         if (totalPages <= 1) {
             container.innerHTML = '';
             return;

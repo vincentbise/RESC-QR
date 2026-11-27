@@ -36,12 +36,15 @@ class DashboardController extends Controller {
         $stmt2->execute();
         $recentScans = $stmt2->fetchAll();
 
+        $outcome = $this->eventOutcome($db);
+
         $data = [
             'pageTitle'     => 'Dashboard',
             'totalStudents' => $adminModel->getTotalStudents(),
             'activeEvents'  => $adminModel->getActiveEvents(),
-            'safeCount'     => $activeEvent ? (int)$activeEvent['safe_count'] : 0,
-            'missingCount'  => $activeEvent ? (int)$activeEvent['missing_count'] : 0,
+            'safeCount'     => $outcome['safeCount'],
+            'missingCount'  => $outcome['missingCount'],
+            'outcomeNote'   => $outcome['note'],
             'activeEvent'   => $activeEvent,
             'recentScans'   => $recentScans,
             'classes'       => $classModel->getClassesWithCounts(),
@@ -58,17 +61,7 @@ class DashboardController extends Controller {
 
         $db = Database::getInstance()->getConnection();
 
-        $stmt = $db->prepare(
-            "SELECT
-                COALESCE(SUM(ss.status='Safe'), 0) AS safe_count,
-                COALESCE(SUM(ss.status='Not Yet Scanned'), 0) AS missing_count,
-                COALESCE(SUM(ss.status='Absent'), 0) AS not_in_class_count
-             FROM student_status ss
-             JOIN emergency_event e ON ss.event_id = e.event_id
-             WHERE e.status = 'Active'"
-        );
-        $stmt->execute();
-        $counts = $stmt->fetch();
+        $outcome = $this->eventOutcome($db);
 
         $stmt2 = $db->prepare(
             "SELECT q.scan_time, q.scan_result, s.first_name, s.last_name, c.section_name
@@ -83,11 +76,43 @@ class DashboardController extends Controller {
         $this->json([
             'success'       => true,
             'totalStudents' => (int)$adminModel->getTotalStudents(),
-            'safeCount'     => (int)($counts['safe_count'] ?? 0),
-            'missingCount'  => (int)($counts['missing_count'] ?? 0),
-            'notInClass'    => (int)($counts['not_in_class_count'] ?? 0),
+            'safeCount'     => $outcome['safeCount'],
+            'missingCount'  => $outcome['missingCount'],
+            'outcomeNote'   => $outcome['note'],
             'activeEvents'  => (int)$adminModel->getActiveEvents(),
             'recentScans'   => $recentScans,
         ]);
+    }
+
+    /**
+     * Safe / Missing totals are only final once an event is closed.
+     * - Event active  → counts are null (shown as "—") until it closes.
+     * - Otherwise     → counts from the most recently closed event.
+     */
+    private function eventOutcome($db) {
+        $active = (int)$db->query("SELECT COUNT(*) FROM emergency_event WHERE status = 'Active'")->fetchColumn();
+        if ($active > 0) {
+            return ['safeCount' => null, 'missingCount' => null, 'note' => 'Shown when the event is closed'];
+        }
+
+        $last = $db->query(
+            "SELECT e.event_type, e.event_datetime,
+                    COALESCE(v.safe_count, 0) AS safe_count,
+                    COALESCE(v.missing_count, 0) AS missing_count
+             FROM emergency_event e
+             LEFT JOIN vw_event_status_summary v ON v.event_id = e.event_id
+             WHERE e.status = 'Closed'
+             ORDER BY e.event_datetime DESC LIMIT 1"
+        )->fetch();
+
+        if (!$last) {
+            return ['safeCount' => 0, 'missingCount' => 0, 'note' => 'No events yet'];
+        }
+
+        return [
+            'safeCount'    => (int)$last['safe_count'],
+            'missingCount' => (int)$last['missing_count'],
+            'note'         => 'Last event: ' . $last['event_type'] . ', ' . date('M d', strtotime($last['event_datetime'])),
+        ];
     }
 }

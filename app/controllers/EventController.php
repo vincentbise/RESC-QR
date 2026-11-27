@@ -64,9 +64,16 @@ class EventController extends Controller {
             return;
         }
 
+        $event = $this->eventModel->findEvent($id);
+        if (!$event || $event['status'] !== 'Active') {
+            $this->setFlash('error', 'This event is not active.');
+            $this->redirect('/event');
+            return;
+        }
+
         try {
-            $this->eventModel->close($id);
-            $this->setFlash('success', 'Event closed successfully. Students not yet scanned are recorded as missing.');
+            $missing = $this->eventModel->close($id);
+            $this->setFlash('success', 'Event closed. ' . $missing . ' student' . ($missing === 1 ? ' was' : 's were') . ' not scanned and ' . ($missing === 1 ? 'is' : 'are') . ' now recorded as Missing.');
         } catch (\Exception $e) {
             $this->setFlash('error', 'Failed to close event.');
         }

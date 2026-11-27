@@ -121,31 +121,50 @@ class ScanController extends Controller {
         $activeEvent = $this->eventModel->getActiveEvent();
         $classId = $_SESSION['class_id'] ?? null;
 
-        $students = [];
-        $summary = ['safe_count' => 0, 'missing_count' => 0, 'not_in_class_count' => 0, 'total' => 0];
+        $students    = [];
+        $closedEvent = null;
+        $summary = ['safe_count' => 0, 'missing_count' => 0, 'not_yet_scanned_count' => 0, 'not_in_class_count' => 0, 'total' => 0];
 
         if ($activeEvent) {
+            // During an emergency: Not Yet Scanned until scanned, then Safe
             $this->eventModel->initializeStatuses($activeEvent['event_id']);
             $students = $this->statusModel->getStatusesByEvent($activeEvent['event_id'], $classId);
             $summary  = $this->statusModel->getSummary($activeEvent['event_id'], $classId);
         } else {
+            // No emergency: everyone Safe (or Absent per today's attendance) —
+            // except students recorded Missing when the last emergency closed.
+            // Those stay Missing until the next emergency is declared.
+            $closedEvent = $this->eventModel->getLastClosedEvent() ?: null;
+            $missingIds = [];
+            if ($closedEvent) {
+                foreach ($this->statusModel->getStatusesByEvent($closedEvent['event_id'], $classId) as $row) {
+                    if ($row['status'] === 'Missing') $missingIds[(int)$row['student_id']] = true;
+                }
+            }
+
             $students = $this->studentModel->getAll('', $classId);
             $attendanceMap = $this->attendanceModel->getStatusMapByClassAndDate($classId, date('Y-m-d'));
-            $absentCount = 0;
             foreach ($students as &$student) {
-                if (($attendanceMap[$student['student_id']] ?? null) === 'Absent') {
+                unset($student['password_hash']); // never send credentials to the browser
+                $sid = (int)$student['student_id'];
+                if (isset($missingIds[$sid])) {
+                    $student['status'] = 'Missing';
+                    $summary['missing_count']++;
+                } elseif (($attendanceMap[$sid] ?? null) === 'Absent') {
                     $student['status'] = 'Absent';
-                    $absentCount++;
+                    $summary['not_in_class_count']++;
                 } else {
                     $student['status'] = 'Safe';
+                    $summary['safe_count']++;
                 }
             }
             unset($student);
-            $summary['safe_count'] = count($students) - $absentCount;
-            $summary['missing_count'] = 0;
-            $summary['not_in_class_count'] = $absentCount;
             $summary['total'] = count($students);
         }
+
+        // Which state the list is in: 'active' (event ongoing), 'closed' (showing last event's results), 'none'
+        $mode = $activeEvent ? 'active' : ($closedEvent ? 'closed' : 'none');
+        $modeKey = $mode . ':' . ($activeEvent['event_id'] ?? $closedEvent['event_id'] ?? 0);
 
         if ($this->isAjax()) {
             $this->json([
@@ -153,6 +172,7 @@ class ScanController extends Controller {
                 'students'     => array_values($students),
                 'summary'      => $summary,
                 'active_event' => (bool)$activeEvent,
+                'mode_key'     => $modeKey,
             ]);
             return;
         }
@@ -162,6 +182,8 @@ class ScanController extends Controller {
             'students'    => $students,
             'summary'     => $summary,
             'activeEvent' => $activeEvent,
+            'closedEvent' => $closedEvent,
+            'modeKey'     => $modeKey,
             'extraJs'     => ['dashboard.js'],
         ];
 

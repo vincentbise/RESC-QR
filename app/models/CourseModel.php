@@ -3,7 +3,7 @@
 class CourseModel extends Model {
 
     public function getAll() {
-        return $this->findAll('course', 'course_name ASC');
+        return $this->findAll('course', 'course_code ASC, course_major ASC');
     }
 
     public function findByIdCourse($id) {
@@ -19,26 +19,28 @@ class CourseModel extends Model {
              LEFT JOIN class c ON c.course_id = co.course_id
              LEFT JOIN student s ON s.class_id = c.class_id
              GROUP BY co.course_id
-             ORDER BY co.course_name ASC"
+             ORDER BY co.course_code ASC, co.course_major ASC"
         );
         return $stmt->fetchAll();
     }
 
-    public function existsByCodeOrName($code, $name, $excludeId = null) {
-        $sql = "SELECT course_id FROM course WHERE (LOWER(course_code) = LOWER(:code) OR LOWER(course_name) = LOWER(:name))";
-        $params = [':code' => $code, ':name' => $name];
-        if ($excludeId !== null) {
-            $sql .= " AND course_id != :id";
-            $params[':id'] = $excludeId;
-        }
-        $stmt = $this->query($sql . " LIMIT 1", $params);
+    public function existsByCodeAndMajor($code, $major) {
+        $stmt = $this->query(
+            "SELECT course_id FROM course
+             WHERE LOWER(course_code) = LOWER(:code) AND LOWER(course_major) = LOWER(:major)
+             LIMIT 1",
+            [':code' => $code, ':major' => $major]
+        );
         return (bool) $stmt->fetch();
     }
 
-    public function createCourse($code, $name) {
+    public function createCourse($code, $major) {
+        // course_name stays as a readable label (used as class.program and in student forms)
+        $name = $major !== '' ? $code . ' - ' . $major : $code;
         return $this->insert('course', [
-            'course_code' => $code,
-            'course_name' => $name,
+            'course_code'  => $code,
+            'course_major' => $major,
+            'course_name'  => $name,
         ]);
     }
 

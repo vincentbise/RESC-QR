@@ -6,7 +6,8 @@ class EmergencyEvent extends Model {
         $stmt = $this->query(
             "SELECT e.*, a.name as created_by_name,
                     COALESCE(v.safe_count, 0) as safe_count,
-                    COALESCE(v.missing_count, 0) as missing_count
+                    COALESCE(v.missing_count, 0) as missing_count,
+                    COALESCE(v.not_yet_scanned_count, 0) as not_yet_scanned_count
              FROM emergency_event e
              JOIN admin a ON e.created_by = a.admin_id
              LEFT JOIN vw_event_status_summary v ON e.event_id = v.event_id
@@ -34,8 +35,26 @@ class EmergencyEvent extends Model {
         return $this->update('emergency_event', ['status' => 'Active'], 'event_id', $id);
     }
 
+    /**
+     * Close an event and finalize statuses: anyone still "Not Yet Scanned" becomes "Missing".
+     * Returns the number of students recorded as missing.
+     */
     public function close($id) {
-        return $this->update('emergency_event', ['status' => 'Closed'], 'event_id', $id);
+        $this->db->beginTransaction();
+        try {
+            $this->update('emergency_event', ['status' => 'Closed'], 'event_id', $id);
+            $missing = $this->markUnscannedAsMissing($id);
+            $this->db->commit();
+            return $missing;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function getLastClosedEvent() {
+        $stmt = $this->query("SELECT * FROM emergency_event WHERE status = 'Closed' ORDER BY event_datetime DESC LIMIT 1");
+        return $stmt->fetch();
     }
 
     public function getActiveEvent() {
@@ -68,11 +87,12 @@ class EmergencyEvent extends Model {
         );
     }
     public function markUnscannedAsMissing($eventId) {
-        $this->query(
+        $stmt = $this->query(
             "UPDATE student_status
              SET status = 'Missing'
              WHERE event_id = :eid AND status = 'Not Yet Scanned'",
             [':eid' => $eventId]
         );
+        return $stmt->rowCount();
     }
 }

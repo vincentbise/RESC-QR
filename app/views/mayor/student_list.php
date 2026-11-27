@@ -1,16 +1,60 @@
+<?php
+$closedEvent  = $closedEvent ?? null;
+$missingAfter = !$activeEvent && (int)($summary['missing_count'] ?? 0) > 0;
+
+// Badge colour per status: Safe green, Not Yet Scanned amber, Missing red, Absent neutral
+if (!function_exists('mayorStatusBadge')) {
+    function mayorStatusBadge($status) {
+        switch ($status) {
+            case 'Safe':            return 'success';
+            case 'Not Yet Scanned': return 'warning';
+            case 'Missing':         return 'danger';
+            default:                return 'info';
+        }
+    }
+}
+?>
+
 <?php if ($activeEvent): ?>
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+<div class="sl-banner sl-banner-active">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div>
+        <strong><?= e($activeEvent['event_type']) ?> emergency in progress.</strong>
+        Students are <em>Not Yet Scanned</em> until their QR code is scanned, then they're marked <em>Safe</em>.
+    </div>
+</div>
+<?php elseif ($missingAfter): ?>
+<div class="sl-banner sl-banner-missing">
+    <i class="fas fa-user-times"></i>
+    <div>
+        <strong><?= e($closedEvent['event_type']) ?> emergency closed</strong>
+        (<?= date('M d, g:i A', strtotime($closedEvent['event_datetime'])) ?>).
+        Students who were never scanned are recorded as <em>Missing</em> until the next emergency is declared.
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($activeEvent || $missingAfter): ?>
+<div class="stats-grid sl-stats">
     <div class="stat-card success">
         <div class="stat-header"><div class="stat-icon"><i class="fas fa-shield-alt"></i></div></div>
         <div class="stat-value" id="safeVal"><?= (int)($summary['safe_count'] ?? 0) ?></div>
         <div class="stat-label">Safe</div>
     </div>
+    <?php if ($activeEvent): ?>
+    <div class="stat-card warning">
+        <div class="stat-header"><div class="stat-icon"><i class="fas fa-clock"></i></div></div>
+        <div class="stat-value" id="pendingVal"><?= (int)($summary['not_yet_scanned_count'] ?? 0) ?></div>
+        <div class="stat-label">Not Yet Scanned</div>
+    </div>
+    <?php else: ?>
     <div class="stat-card danger">
         <div class="stat-header"><div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div></div>
         <div class="stat-value" id="missingVal"><?= (int)($summary['missing_count'] ?? 0) ?></div>
-        <div class="stat-label">Not Yet Scanned</div>
+        <div class="stat-label">Missing</div>
     </div>
-    <div class="stat-card warning">
+    <?php endif; ?>
+    <div class="stat-card info">
         <div class="stat-header"><div class="stat-icon"><i class="fas fa-user-slash"></i></div></div>
         <div class="stat-value" id="notInClassVal"><?= (int)($summary['not_in_class_count'] ?? 0) ?></div>
         <div class="stat-label">Absent</div>
@@ -66,11 +110,7 @@
                         <?php foreach ($students as $s): ?>
                         <?php
                             $status   = $s['status'];
-                            $badgeCls = $status === 'Safe'
-                                ? 'success'
-                                : ($status === 'Not Yet Scanned'
-                                    ? 'danger'
-                                    : ($status === 'Absent' ? 'warning' : 'info'));
+                            $badgeCls = mayorStatusBadge($status);
                         ?>
                         <tr class="status-row"
                             data-status="<?= e($status) ?>"
@@ -92,7 +132,7 @@
                             <td><span class="badge badge-<?= $badgeCls ?>"><?= e($status) ?></span></td>
                             <td>
                                 <div class="d-flex gap-1">
-                                    <?php if ($activeEvent): ?>
+                                    <?php if ($activeEvent || $status === 'Missing'): ?>
                                         <?php if (!empty($s['phone'])): ?>
                                             <a href="tel:<?= e($s['phone']) ?>" class="dial-btn" title="Call <?= e($s['first_name']) ?>">
                                                 <i class="fas fa-phone-alt"></i>
@@ -119,6 +159,33 @@
 </div>
 
 <style>
+/* ── State banner & stat cards ───────────────────────────── */
+.sl-banner {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: var(--radius-md, 12px);
+    border: 1px solid;
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+.sl-banner > i { margin-top: 3px; }
+.sl-banner em { font-style: normal; font-weight: 700; }
+.sl-banner-active  { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.35); color: var(--text-primary); }
+.sl-banner-active > i  { color: var(--accent-warning); }
+.sl-banner-missing { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.35); color: var(--text-primary); }
+.sl-banner-missing > i { color: var(--accent-danger); }
+.sl-stats { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 600px) {
+    .sl-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .sl-stats .stat-card { padding: 12px; }
+    .sl-stats .stat-icon { display: none; }
+    .sl-stats .stat-value { font-size: 22px; }
+    .sl-stats .stat-label { font-size: 11px; }
+}
+
 /* ── Status filter dropdown ──────────────────────────────── */
 .status-dropdown {
     position: relative;
@@ -291,6 +358,9 @@
 <script>
 (function () {
     let hasActiveEvent = <?= $activeEvent ? 'true' : 'false' ?>;
+    // Reload when an emergency starts or closes so the banner and cards match the new state
+    const MODE_KEY = <?= json_encode($modeKey ?? '') ?>;
+    const MISSING_SHOWN = <?= !empty($missingAfter) ? 'true' : 'false' ?>;
 
     // No alias map needed — Missing and Not Yet Scanned are distinct statuses
     const STATUS_MAP = {};
@@ -361,12 +431,11 @@
 
     /* ── Stat cards ─────────────────────────────────────────── */
     function updateStatCards(summary) {
-        const safeEl     = document.getElementById('safeVal');
-        const missingEl  = document.getElementById('missingVal');
-        const notInClsEl = document.getElementById('notInClassVal');
-        if (safeEl)     safeEl.textContent     = summary.safe_count     ?? 0;
-        if (missingEl)  missingEl.textContent  = summary.missing_count  ?? 0;
-        if (notInClsEl) notInClsEl.textContent = summary.not_in_class_count ?? 0;
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? 0; };
+        set('safeVal',       summary.safe_count);
+        set('pendingVal',    summary.not_yet_scanned_count);
+        set('missingVal',    summary.missing_count);
+        set('notInClassVal', summary.not_in_class_count);
     }
 
     /* ── Dynamic row rendering ──────────────────────────────── */
@@ -377,11 +446,7 @@
             return;
         }
 
-        const badgeClass = s => s === 'Safe'
-            ? 'success'
-            : (s === 'Not Yet Scanned'
-                ? 'danger'
-                : (s === 'Absent' ? 'warning' : 'info'));
+        const badgeClass = s => ({ 'Safe': 'success', 'Not Yet Scanned': 'warning', 'Missing': 'danger' }[s] || 'info');
 
         tbody.innerHTML = students.map(s => {
             const initials = (s.last_name[0] + s.first_name[0]).toUpperCase();
@@ -392,8 +457,8 @@
             const phone = s.phone ? App.escapeHtml(s.phone) : '';
 
             let actionHtml = '';
-            if (hasActiveEvent) {
-                // During event: show phone call button
+            if (hasActiveEvent || s.status === 'Missing') {
+                // During event, or for a Missing student: show phone call button
                 if (phone) {
                     actionHtml = `<a href="tel:${phone}" class="dial-btn" title="Call"><i class="fas fa-phone-alt"></i></a>`;
                 }
@@ -428,6 +493,11 @@
         try {
             const data = await App.get('/scan/students');
             if (data.success) {
+                const missingNow = !data.active_event && (parseInt(data.summary.missing_count) || 0) > 0;
+                if ((data.mode_key && data.mode_key !== MODE_KEY) || missingNow !== (MISSING_SHOWN && !hasActiveEvent)) {
+                    location.reload();
+                    return;
+                }
                 if (typeof data.active_event !== 'undefined') {
                     hasActiveEvent = !!data.active_event;
                 }

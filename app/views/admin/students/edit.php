@@ -40,10 +40,20 @@
                 <div class="form-group">
                     <label for="course">Course *</label>
                     <select class="form-control" id="course" name="course" required>
+                        <?php
+                        // Several courses can share a code (one per major), so match on the student's class course_id
+                        $studentCourseId = null;
+                        foreach ($classes as $cl) {
+                            if ((int)$cl['class_id'] === (int)$student['class_id']) { $studentCourseId = $cl['course_id'] ?? null; break; }
+                        }
+                        ?>
                         <?php foreach ($courses as $co): ?>
+                            <?php $isSel = $studentCourseId
+                                ? (int)$studentCourseId === (int)$co['course_id']
+                                : $student['course'] === $co['course_code']; ?>
                             <option value="<?= e($co['course_code']) ?>"
                                     data-course-id="<?= (int)$co['course_id'] ?>"
-                                    <?= $student['course'] === $co['course_code'] ? 'selected' : '' ?>>
+                                    <?= $isSel ? 'selected' : '' ?>>
                                 <?= e($co['course_name']) ?>
                             </option>
                         <?php endforeach; ?>

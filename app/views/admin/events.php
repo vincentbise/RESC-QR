@@ -40,8 +40,16 @@
                             <td><?= date('M d, Y g:i A', strtotime($ev['event_datetime'])) ?></td>
                             <td class="text-muted"><?= e($ev['description'] ?? '—') ?></td>
                             <td><?= e($ev['created_by_name']) ?></td>
-                            <td><span class="badge badge-success"><?= (int)($ev['safe_count'] ?? 0) ?></span></td>
-                            <td><span class="badge badge-danger"><?= (int)($ev['missing_count'] ?? 0) ?></span></td>
+                            <?php if ($ev['status'] === 'Active'): ?>
+                                <td colspan="2">
+                                    <span class="text-muted" style="font-size:12px;white-space:nowrap;" title="Safe and missing counts are finalized when the event is closed">
+                                        <i class="fas fa-hourglass-half"></i> Available after closing
+                                    </span>
+                                </td>
+                            <?php else: ?>
+                                <td><span class="badge badge-success"><?= (int)($ev['safe_count'] ?? 0) ?></span></td>
+                                <td><span class="badge badge-danger"><?= (int)($ev['missing_count'] ?? 0) ?></span></td>
+                            <?php endif; ?>
                             <td>
                                 <?php if ($ev['status'] === 'Active'): ?>
                                     <span class="badge badge-danger" style="animation:pulse 2s infinite;">● ACTIVE</span>
@@ -51,7 +59,7 @@
                             </td>
                             <td>
                                 <?php if ($ev['status'] === 'Active'): ?>
-                                    <form method="POST" action="<?= baseUrl('event/close/' . $ev['event_id']) ?>" style="display:inline;" onsubmit="return confirm('Close this event? This will finalize all student statuses.');">
+                                    <form method="POST" action="<?= baseUrl('event/close/' . $ev['event_id']) ?>" style="display:inline;" onsubmit="return confirm('Close this event? Students who have not been scanned (<?= (int)($ev['not_yet_scanned_count'] ?? 0) ?>) will be recorded as Missing.');">
                                         <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
                                         <button type="submit" class="btn btn-warning btn-sm">
                                             <i class="fas fa-times-circle"></i> Close
@@ -95,7 +103,7 @@
                 </div>
                 <div class="alert alert-warning">
                     <i class="fas fa-info-circle"></i>
-                    <span>Creating an event will mark <strong>all active students</strong> as "Not Yet Scanned" until scanned.</span>
+                    <span>Creating an event will mark <strong>all active students</strong> as "Not Yet Scanned" until scanned. Safe and missing totals are shown once the event is closed — anyone still not scanned then is recorded as <strong>Missing</strong>.</span>
                 </div>
             </div>
             <div class="modal-footer">

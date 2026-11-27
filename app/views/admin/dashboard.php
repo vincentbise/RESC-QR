@@ -10,15 +10,17 @@
         <div class="stat-header">
             <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
         </div>
-        <div class="stat-value" id="statSafe"><?= e($safeCount) ?></div>
+        <div class="stat-value" id="statSafe"><?= $safeCount === null ? '—' : e($safeCount) ?></div>
         <div class="stat-label">Safe</div>
+        <div class="stat-note text-muted" data-outcome-note style="font-size:11px;margin-top:4px;"><?= e($outcomeNote) ?></div>
     </div>
     <div class="stat-card danger">
         <div class="stat-header">
             <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
         </div>
-        <div class="stat-value" id="statMissing"><?= e($missingCount) ?></div>
+        <div class="stat-value" id="statMissing"><?= $missingCount === null ? '—' : e($missingCount) ?></div>
         <div class="stat-label">Missing</div>
+        <div class="stat-note text-muted" data-outcome-note style="font-size:11px;margin-top:4px;"><?= e($outcomeNote) ?></div>
     </div>
     <div class="stat-card warning">
         <div class="stat-header">
@@ -117,4 +119,4 @@
 }
 </style>
 
-<script src="<?= publicUrl('js/dashboard.js') ?>"></script>
+<script src="<?= publicUrl('js/dashboard.js') ?>?v=<?= filemtime(ROOT_PATH . '/public/js/dashboard.js') ?>"></script>

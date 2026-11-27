@@ -19,7 +19,7 @@ class ClassroomController extends Controller {
 
         // Active students along with their effective mayor flag for the cascading mayor selector
         $stmt = $db->query(
-            "SELECT s.student_id, s.class_id, s.first_name, s.last_name, s.email,
+            "SELECT s.student_id, s.class_id, s.first_name, s.last_name, s.email, s.phone,
                     CASE
                         WHEN (cm.mayor_id IS NOT NULL AND COALESCE(up_m.is_mayor, 1) = 1)
                           OR COALESCE(up_s.is_mayor, 0) = 1
@@ -53,21 +53,22 @@ class ClassroomController extends Controller {
         }
         $this->validateCSRF();
 
-        $code = InputValidator::sanitizeString($_POST['course_code'] ?? '');
-        $name = InputValidator::sanitizeString($_POST['course_name'] ?? '');
+        $code  = strtoupper(InputValidator::sanitizeString($_POST['course_code'] ?? ''));
+        $major = InputValidator::sanitizeString($_POST['course_major'] ?? '');
 
-        if ($code === '' || $name === '') {
-            $this->json(['success' => false, 'message' => 'Course code and course name are required.'], 422);
+        if ($code === '') {
+            $this->json(['success' => false, 'message' => 'Course code is required.'], 422);
             return;
         }
 
-        if ($this->courseModel->existsByCodeOrName($code, $name)) {
-            $this->json(['success' => false, 'message' => 'A course with that code or name already exists.'], 422);
+        if ($this->courseModel->existsByCodeAndMajor($code, $major)) {
+            $label = $major !== '' ? $code . ' major in ' . $major : $code;
+            $this->json(['success' => false, 'message' => $label . ' already exists.'], 422);
             return;
         }
 
-        $this->courseModel->createCourse($code, $name);
-        $this->json(['success' => true, 'message' => 'Course added successfully.']);
+        $newId = $this->courseModel->createCourse($code, $major);
+        $this->json(['success' => true, 'message' => 'Course added successfully.', 'course_id' => (int)$newId]);
     }
 
     public function deleteCourse($id = null) {
@@ -121,8 +122,8 @@ class ClassroomController extends Controller {
             return;
         }
 
-        if ($this->classModel->sectionExists($sectionName)) {
-            $this->json(['success' => false, 'message' => 'Section "' . $sectionName . '" already exists.'], 422);
+        if ($this->classModel->sectionExists($sectionName, $courseId)) {
+            $this->json(['success' => false, 'message' => 'Section "' . $sectionName . '" already exists in this course.'], 422);
             return;
         }
 

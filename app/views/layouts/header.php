@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="<?= publicUrl('css/style.css') ?>?v=<?= filemtime(ROOT_PATH . '/public/css/style.css') ?>">
     <?php if (isset($extraCss)): foreach ((array)$extraCss as $css): ?>
-        <link rel="stylesheet" href="<?= publicUrl('css/' . $css) ?>">
+        <link rel="stylesheet" href="<?= publicUrl('css/' . $css) ?>?v=<?= @filemtime(ROOT_PATH . '/public/css/' . $css) ?>">
     <?php endforeach; endif; ?>
     <meta name="csrf-token" content="<?= generateCSRFToken() ?>">
 </head>

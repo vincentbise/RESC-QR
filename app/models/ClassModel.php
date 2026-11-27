@@ -22,10 +22,10 @@ class ClassModel extends Model {
         return $this->delete('class', 'class_id', $id);
     }
 
-    public function sectionExists($sectionName) {
+    public function sectionExists($sectionName, $courseId) {
         $stmt = $this->query(
-            "SELECT class_id FROM class WHERE LOWER(section_name) = LOWER(:sec) LIMIT 1",
-            [':sec' => $sectionName]
+            "SELECT class_id FROM class WHERE LOWER(section_name) = LOWER(:sec) AND course_id = :cid LIMIT 1",
+            [':sec' => $sectionName, ':cid' => $courseId]
         );
         return (bool) $stmt->fetch();
     }

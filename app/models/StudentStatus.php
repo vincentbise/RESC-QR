@@ -46,7 +46,7 @@ class StudentStatus extends Model {
             "SELECT s.*, c.section_name FROM student_status ss
              JOIN student s ON ss.student_id = s.student_id
              JOIN class c ON s.class_id = c.class_id
-             WHERE ss.event_id = :eid AND ss.status = 'Not Yet Scanned' ORDER BY s.last_name",
+             WHERE ss.event_id = :eid AND ss.status = 'Missing' ORDER BY s.last_name",
             [':eid' => $eventId]
         );
         return $stmt->fetchAll();
@@ -55,7 +55,8 @@ class StudentStatus extends Model {
     public function getSummary($eventId, $classId = null) {
         $sql = "SELECT
                     COALESCE(SUM(ss.status='Safe'),0) as safe_count,
-                    COALESCE(SUM(ss.status='Not Yet Scanned'),0) as missing_count,
+                    COALESCE(SUM(ss.status='Missing'),0) as missing_count,
+                    COALESCE(SUM(ss.status='Not Yet Scanned'),0) as not_yet_scanned_count,
                     COALESCE(SUM(ss.status='Absent'),0) as not_in_class_count,
                     COUNT(*) as total
                 FROM student_status ss

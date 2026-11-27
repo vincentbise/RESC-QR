@@ -56,9 +56,14 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
         <?php endif; ?>
 
         <?php // ========== MANAGEMENT SECTION ========== ?>
-        <?php if (hasPermission('perm_student_list_admin') || hasPermission('perm_qr_codes') || hasPermission('perm_declare_emergency')): ?>
+        <?php if ($role === 'admin' || hasPermission('perm_student_list_admin') || hasPermission('perm_qr_codes') || hasPermission('perm_declare_emergency')): ?>
         <div class="nav-section">
             <div class="nav-section-title">Management</div>
+            <?php if ($role === 'admin'): ?>
+            <a href="<?= baseUrl('classroom') ?>" class="nav-link <?= isActive('classroom') ?>">
+                <i class="fas fa-chalkboard-teacher"></i> Classrooms
+            </a>
+            <?php endif; ?>
             <?php if (hasPermission('perm_student_list_admin')): ?>
             <a href="<?= baseUrl('student') ?>" class="nav-link <?= isActive('student') ?>">
                 <i class="fas fa-user-graduate"></i> Students
@@ -104,9 +109,6 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
         <?php if ($role === 'admin'): ?>
         <div class="nav-section">
             <div class="nav-section-title">Administration</div>
-            <a href="<?= baseUrl('classroom') ?>" class="nav-link <?= isActive('classroom') ?>">
-                <i class="fas fa-chalkboard-teacher"></i> Classrooms
-            </a>
             <a href="<?= baseUrl('rbac') ?>" class="nav-link <?= isActive('rbac') ?>">
                 <i class="fas fa-user-shield"></i> Access Control
             </a>
