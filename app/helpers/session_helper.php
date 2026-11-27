@@ -91,9 +91,11 @@ function getRoleDefaultPermissions($role) {
             'perm_qr_scanner'         => 1,
             'perm_student_list_mayor' => 1,
             'perm_emergency_hotlines' => 1,
+            'perm_my_qr'              => 1,
         ],
         'student' => [
-            'perm_my_qr' => 1,
+            'perm_my_qr'              => 1,
+            'perm_emergency_hotlines' => 1,
         ],
     ];
 

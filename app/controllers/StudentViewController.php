@@ -50,10 +50,10 @@ class StudentViewController extends Controller {
     }
 
     public function profile() {
-        $role = getUserRole();
+        $originalRole = getUserOriginalRole();
         $db = Database::getInstance()->getConnection();
 
-        if ($role === 'mayor') {
+        if ($originalRole === 'mayor') {
             // Mayor profile — load from class_mayor table, map fields to match student view
             $stmt = $db->prepare(
                 "SELECT cm.*, c.section_name, c.program
@@ -106,11 +106,11 @@ class StudentViewController extends Controller {
 
         $this->validateCSRF();
 
-        $id   = getUserId();
-        $role = getUserRole();
+        $id           = getUserId();
+        $originalRole = getUserOriginalRole();
 
-        // ---- MAYOR UPDATE ----
-        if ($role === 'mayor') {
+        // ---- MAYOR UPDATE (hardcoded class_mayor only) ----
+        if ($originalRole === 'mayor') {
             $db = Database::getInstance()->getConnection();
 
             $firstName = InputValidator::validateName($_POST['first_name'] ?? '');
@@ -303,12 +303,12 @@ class StudentViewController extends Controller {
             return;
         }
 
-        $id   = getUserId();
-        $role = getUserRole();
-        $db   = Database::getInstance()->getConnection();
+        $id           = getUserId();
+        $originalRole = getUserOriginalRole();
+        $db           = Database::getInstance()->getConnection();
 
-        // Load current hash based on role
-        if ($role === 'mayor') {
+        // Load current hash based on original account table
+        if ($originalRole === 'mayor') {
             $stmt = $db->prepare("SELECT password_hash FROM class_mayor WHERE mayor_id = :id");
             $stmt->execute([':id' => $id]);
         } else {
@@ -335,7 +335,7 @@ class StudentViewController extends Controller {
 
         $newHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
 
-        if ($role === 'mayor') {
+        if ($originalRole === 'mayor') {
             $stmt = $db->prepare("UPDATE class_mayor SET password_hash = :hash WHERE mayor_id = :id");
         } else {
             $stmt = $db->prepare("UPDATE student SET password_hash = :hash WHERE student_id = :id");

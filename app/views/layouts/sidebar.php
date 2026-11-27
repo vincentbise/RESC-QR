@@ -1,5 +1,6 @@
 <?php
 $role = getUserRole();
+$originalRole = getUserOriginalRole();
 $initials = strtoupper(substr(getUserName(), 0, 2));
 ?>
 <aside class="sidebar" id="sidebar">
@@ -21,14 +22,7 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
                 <i class="fas fa-th-large"></i> Dashboard
             </a>
         </div>
-        <?php elseif ($role === 'mayor'): ?>
-        <div class="nav-section">
-            <div class="nav-section-title">My Account</div>
-            <a href="<?= baseUrl('studentview/profile') ?>" class="nav-link <?= isActive('studentview/profile') ?>">
-                <i class="fas fa-user-edit"></i> My Profile
-            </a>
-        </div>
-        <?php elseif ($role === 'student'): ?>
+        <?php elseif ($originalRole === 'student'): ?>
         <div class="nav-section">
             <div class="nav-section-title">My Account</div>
             <a href="<?= baseUrl('studentview') ?>" class="nav-link <?= isActive('studentview') ?>">
@@ -41,6 +35,13 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
             <?php endif; ?>
             <a href="<?= baseUrl('studentview/profile') ?>" class="nav-link <?= isActive('studentview/profile') ?>">
                 <i class="fas fa-user-edit"></i> Profile
+            </a>
+        </div>
+        <?php elseif ($role === 'mayor'): ?>
+        <div class="nav-section">
+            <div class="nav-section-title">My Account</div>
+            <a href="<?= baseUrl('studentview/profile') ?>" class="nav-link <?= isActive('studentview/profile') ?>">
+                <i class="fas fa-user-edit"></i> My Profile
             </a>
         </div>
         <?php endif; ?>
@@ -98,7 +99,7 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
         <?php endif; ?>
 
         <?php // ========== QUICK ACTIONS SECTION ========== ?>
-        <?php if (hasPermission('perm_emergency_hotlines') || (hasPermission('perm_my_qr') && $role !== 'student')): ?>
+        <?php if (hasPermission('perm_emergency_hotlines') || (hasPermission('perm_my_qr') && $originalRole !== 'student')): ?>
         <div class="nav-section">
             <div class="nav-section-title">Quick Actions</div>
             <?php if (hasPermission('perm_emergency_hotlines')): ?>
@@ -106,7 +107,7 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
                 <i class="fas fa-phone-alt fa-flip-horizontal"></i> Emergency Hotlines
             </a>
             <?php endif; ?>
-            <?php if (hasPermission('perm_my_qr') && $role !== 'student'): ?>
+            <?php if (hasPermission('perm_my_qr') && $originalRole !== 'student'): ?>
             <a href="<?= baseUrl('studentview/qrcode') ?>" class="nav-link <?= isActive('studentview/qrcode') ?>">
                 <i class="fas fa-qrcode"></i> My QR
             </a>
@@ -138,7 +139,7 @@ $initials = strtoupper(substr(getUserName(), 0, 2));
         <script>document.getElementById('sidebarThemeToggle').addEventListener('click', function(e) { e.preventDefault(); toggleTheme(); });</script>
         <div class="user-card">
             <div class="user-avatar" id="sidebarUserAvatar"style="overflow:hidden;">
-                <?php if ($role === 'student' && getUserAvatar()): ?>
+                <?php if (getUserAvatar()): ?>
                     <img src="<?= e(publicUrl('img/profiles/' . getUserAvatar())) ?>" alt="Profile photo" style="width:100%;height:100%;object-fit:cover;">
                 <?php else: ?>
                     <?= $initials ?>
